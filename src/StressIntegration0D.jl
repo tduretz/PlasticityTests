@@ -46,9 +46,10 @@ function Vermeer90_StressIntegration_tot(σi; params=(
     ηvp = params.ηvp
     
     # Strain integration
-    γ̇xy = params.γ̇xy
-    Δt  = params.Δt 
-    nt  = params.nt 
+    γ̇xy   = params.γ̇xy
+    Δt    = params.Δt 
+    nt    = params.nt
+    niter = 1000 
 
     # Initial condition
     σxx = σi.xx 
@@ -105,7 +106,7 @@ function Vermeer90_StressIntegration_tot(σi; params=(
         # Plastic correction: return mapping
         if f>0 && params.pl
             λ = 0.0
-            for iter=1:1000
+            for iter=1:niter
 
                 # Plastic total strains
                 ε̇xxp   = λ̇*dqdσ[1]
@@ -129,6 +130,7 @@ function Vermeer90_StressIntegration_tot(σi; params=(
 
                 λ̇     += fc / G / 20
                 if abs(fc)<1e-8 break end
+                if iter==niter error("Failed return mapping") end
             end
         end
 
@@ -194,9 +196,10 @@ function Vermeer90_StressIntegration_vdev(σi; params=(
     ηvp = params.ηvp
 
     # Strain integration
-    ε̇xy = params.γ̇xy/2
-    Δt  = params.Δt 
-    nt  = params.nt 
+    ε̇xy   = params.γ̇xy/2
+    Δt    = params.Δt 
+    nt    = params.nt 
+    niter = 1000
 
     # Initial condition
     P    = -1/2*(σi.xx+σi.yy)
@@ -273,7 +276,7 @@ function Vermeer90_StressIntegration_vdev(σi; params=(
             dQdτxy = dqdτ[4]
             dQdP   = dqdτ[5]
             λ̇      = 0.0
-            for iter=1:1000
+            for iter=1:niter
 
                 # Plastic total strain rates
                 ε̇xyp =  λ̇*dQdτxy/2
@@ -310,6 +313,7 @@ function Vermeer90_StressIntegration_vdev(σi; params=(
                 fc     = yield(τ_vec, λ̇, ϕ, c, ηvp, θt, law)
                 λ̇     += fc / G / 20
                 if abs(fc)<1e-8 break end
+                if iter==niter error("Failed return mapping") end
             end
         end
 
