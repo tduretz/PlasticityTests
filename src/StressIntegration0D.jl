@@ -186,7 +186,8 @@ function Vermeer90_StressIntegration_vdev(σi; params=(
     _yield( τ, λ̇, ϕ, c, ηvp, θt, ::Val{:MC_Vermeer1990}) = MohrCoulombVermeer1990_vdev(τ, λ̇, ϕ, c, ηvp, θt)
     _yield( τ, λ̇, ϕ, c, ηvp, θt, ::Val{:DruckerPrager})  =          DruckerPrager_vdev(τ, λ̇, ϕ, c, ηvp, θt)
     _yield( τ, λ̇, ϕ, c, ηvp, θt, ::Val{:MC_AS95})        =       MohrCoulomb_AS95_vdev(τ, λ̇, ϕ, c, ηvp, θt)
-
+    _yield( τ, λ̇, ϕ, c, ηvp, θt, ::Val{:MC_deBorst90})   =  MohrCoulomb_deBorst90_vdev(τ, λ̇, ϕ, c, ηvp, θt)
+    
     # Material properties
     G   = params.G
     c   = params.c
@@ -219,6 +220,9 @@ function Vermeer90_StressIntegration_vdev(σi; params=(
     θv          = zeros(nt)
     σxxv        = zeros(nt)
     εyyv        = zeros(nt)
+    σ1v         = zeros(nt)
+    σ2v         = zeros(nt)
+    σ3v         = zeros(nt)
     app_fric[1] = -τxy/(τyy-P)
 
     # Time integration loop
@@ -283,11 +287,11 @@ function Vermeer90_StressIntegration_vdev(σi; params=(
                 ε̇xxp =  λ̇*dQdτxx 
                 ε̇yyp =  λ̇*dQdτyy
                 # with this one: ezzp'=0, ezzp!=0, tzz=0, ezz'=0
-                # ε̇zzp =  1/2*(ε̇xxp + ε̇yyp)
-                # ∇vp  = -3/2*λ̇*dQdP
-                # with this one: ezzp'!=0, ezzp=0, tzz!=0, ezz'=0
-                ε̇zzp =  λ̇*dQdτzz
-                ∇vp  = -λ̇*dQdP
+                ε̇zzp =  1/2*(ε̇xxp + ε̇yyp)
+                ∇vp  = -3/2*λ̇*dQdP
+                # with this one: ezzp'!=0, ezzp=0, tzz!=0, ezz'=0 - this allows every return mapping to match on case A and B
+                # ε̇zzp =  λ̇*dQdτzz
+                # ∇vp  = -λ̇*dQdP
                 # ∇vp = ε̇xxp + ε̇yyp + ε̇zzp so ideally ε̇zzp = 0 such that ∇vp = -λ*dQdP
 
                 # Total strain rates
@@ -321,12 +325,19 @@ function Vermeer90_StressIntegration_vdev(σi; params=(
         εyy += ε̇yy*Δt
         εxy += ε̇xy*Δt
 
+        # Principal stresses
+        σm  = [τxx-P τxy; τxy τyy-P]
+        v    = eigvals(σm) 
+
         # Storage
         app_fric[it] = -τxy/(τyy - P)
         γxyv[it]     = 2.0.*εxy
         εyyv[it]     = εyy
         θv[it]       = θ
         σxxv[it]     = τxx - P
+        σ1v[it]      = v[1]
+        σ2v[it]      = v[2]
+        σ3v[it]      = v[3]
     end
-    return (γxy=γxyv[2:end].*100, εyy=εyyv[2:end].*100, app_fric=app_fric[2:end], σxx=.-σxxv[2:end]./1e3, θ=θv[2:end].*(180/π))
+    return (γxy=γxyv[2:end].*100, εyy=εyyv[2:end].*100, app_fric=app_fric[2:end], σxx=.-σxxv[2:end]./1e3, θ=θv[2:end].*(180/π), σ1=σ1v, σ2=σ2v, σ3=σ3v)
 end

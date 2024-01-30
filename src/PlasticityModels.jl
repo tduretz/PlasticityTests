@@ -142,16 +142,38 @@ function MohrCoulomb_AS95_vdev(τ, λ̇, ϕ, c, ηvp, θt)
     L   = Lode(τII,J3)
     L> 1.0 ? L= 1.0 : nothing
     L<-1.0 ? L=-1.0 : nothing
-    θ   =  1.0/3.0*asin(L)
+    θ   =  1.0/3.0*asin(-L) 
     if abs(θ)>θt
         sgnθ = sign(θ)
-        A = 1/3*cos(θt)*(3+tan(θt)*tan(3*θt) + 1/sqrt(3)*sgnθ*(tan(3*θt)-3*tan(θt))*sin(ϕ))
-        B = 1/(3*cos(3*θt))*(sgnθ*sin(θt) + 1/sqrt(3)*sin(ϕ)*cos(θt))
-        k = A - B*sin(3*θ)
+        A    = 1/3*cos(θt)*(3+tan(θt)*tan(3*θt) + 1/sqrt(3)*sgnθ*(tan(3*θt)-3*tan(θt))*sin(ϕ))
+        B    = 1/(3*cos(3*θt))*(sgnθ*sin(θt) + 1/sqrt(3)*sin(ϕ)*cos(θt))
+        k    = A - B*sin(3*θ)
     else
-        k   = cos(θ) - 1/sqrt(3)*sin(ϕ)*sin(θ)
+        k    = cos(θ) - 1/sqrt(3)*sin(ϕ)*sin(θ)
     end
     F   = k*τII - τ[5]*sin(ϕ) - c*cos(ϕ) - ηvp*λ̇
+    return F
+end
+
+function MohrCoulomb_deBorst90_vdev(τ, λ̇, ϕ, c, ηvp, θt)
+    P   = τ[5]
+    σm  = [τ[1]-P τ[4] 0; τ[3] τ[2]-P 0; 0 0 τ[3]-P]
+    J2  = 0.5*(τ[1]^2 + τ[2]^2 + τ[3]^2) + τ[4]^2
+    J3  = τ[1]*τ[2]*τ[3] + τ[3]*τ[4]^2
+    L   = -3/2*sqrt(3)*J3/J2/sqrt(J2)
+    L> 1.0 ? L= 1.0 : nothing
+    L<-1.0 ? L=-1.0 : nothing
+    α   = 1/3*asin(L)
+    σ3  = -(P + 2*sqrt(1/3*J2) * sin(α - 2/3*π))
+    σ2  = P + 2*sqrt(1/3*J2) * sin(α)
+    σ1  = -(P + 2*sqrt(1/3*J2) * sin(α + 2/3*π))
+    # v   = eigvals(σm)
+    # @show σ1  = v[1]
+    # @show σ3  = v[3] 
+    F   = 1/2*(σ3 - σ1) + 1/2*(σ3 + σ1)*sin(ϕ) - ηvp*λ̇
+    # @show σ1, σ3
+    # @show -1/2*( σ3 + σ1), P
+    # @show F
     return F
 
     # τII  = sqrt(0.5*(τ[1]^2 + τ[2]^2 + τ[3]^2) + τ[4]^2)
