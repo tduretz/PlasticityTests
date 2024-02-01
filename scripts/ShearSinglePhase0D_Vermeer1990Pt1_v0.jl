@@ -10,7 +10,7 @@ using Plots, LinearAlgebra, CSV
 # Total OOP plastic strain is 0
 # Deviatoric OOP plastic strain is -1/2*(exxp+eyyp)
 
-function Vermeer90_FirstTest_Components(σxxi, σyyi, params)
+function Vermeer1990_FirstTest_Components(σxxi, σyyi, params)
 
     # Material properties
     G   = params.G
@@ -63,7 +63,7 @@ function Vermeer90_FirstTest_Components(σxxi, σyyi, params)
     return γxy, θv, app_fric
 end
 
-function Vermeer90_FirstTest_Matrix(σxxi, σyyi, params)
+function Vermeer1990_FirstTest_Matrix(σxxi, σyyi, params)
 
     # Material properties
     G   = params.G
@@ -123,7 +123,7 @@ function Vermeer90_FirstTest_Matrix(σxxi, σyyi, params)
     return γxy, θv, app_fric
 end
 
-function Vermeer90_StressIntegration1(σxxi, σyyi, params)
+function Vermeer1990_StressIntegration1(σxxi, σyyi, params)
 
     @info "Stress integration: total stress"
 
@@ -244,7 +244,7 @@ function Vermeer90_StressIntegration1(σxxi, σyyi, params)
     return γxy, θv, app_fric
 end
 
-function Vermeer90_StressIntegration2(σxxi, σyyi, params)
+function Vermeer1990_StressIntegration2(σxxi, σyyi, params)
 
     @info "Stress integration: volumetric-deviatoric split"
 
@@ -483,19 +483,19 @@ function main()
 
     if style == :componentwise
         @info "Run with componentwise approach"
-        γxy_A, θv_A, app_fric_A = Vermeer90_FirstTest_Components(σxxA, σyyA, params)
-        γxy_B, θv_B, app_fric_B = Vermeer90_FirstTest_Components(σxxB, σyyB, params)
+        γxy_A, θv_A, app_fric_A = Vermeer1990_FirstTest_Components(σxxA, σyyA, params)
+        γxy_B, θv_B, app_fric_B = Vermeer1990_FirstTest_Components(σxxB, σyyB, params)
     else
         @info "Run with matrix-vector approach"
-        γxy_A, θv_A, app_fric_A = Vermeer90_FirstTest_Matrix(σxxA, σyyA, params)
-        γxy_B, θv_B, app_fric_B = Vermeer90_FirstTest_Matrix(σxxB, σyyB, params)
+        γxy_A, θv_A, app_fric_A = Vermeer1990_FirstTest_Matrix(σxxA, σyyA, params)
+        γxy_B, θv_B, app_fric_B = Vermeer1990_FirstTest_Matrix(σxxB, σyyB, params)
     end
 
     # Test your own stress integration scheme - total stress - Mohr-Coulonmb
-    γxy_1, θv_1, app_fric_1 = Vermeer90_StressIntegration1(σxxB, σyyB, params)
+    γxy_1, θv_1, app_fric_1 = Vermeer1990_StressIntegration1(σxxB, σyyB, params)
 
     # Test your own stress integration scheme - deviatoric stress / pressure - Mohr-Coulonmb
-    γxy_2, θv_2, app_fric_2 = Vermeer90_StressIntegration2(σxxB, σyyB, params)
+    γxy_2, θv_2, app_fric_2 = Vermeer1990_StressIntegration2(σxxB, σyyB, params)
 
     p1 = plot( xlabel = "γxy",  ylabel = "-σxy/σyy" )
     # p1 = plot!(γxy_A[2:end], app_fric_A[2:end], label="Case A - semi-analytics")

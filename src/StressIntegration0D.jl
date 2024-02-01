@@ -1,8 +1,5 @@
-using Printf, LinearAlgebra, Enzyme
-import ForwardDiff
-
 @doc raw"""
-    results = Vermeer90_StressIntegration_tot(σi; params)  ;
+    results = Vermeer1990_StressIntegration_tot(σi; params)  ;
 
 Function that computes a total stress return mapping for test 1 in Vermeer (1990). 
 The function takes as input:
@@ -12,11 +9,11 @@ and returns:
 
 # Examples
 ```julia-repl
-julia>  results = Vermeer90_StressIntegration_tot( (xx=-25e3, yy=-100e3))
+julia>  results = Vermeer1990_StressIntegration_tot( (xx=-25e3, yy=-100e3))
 
 ```
 """
-function Vermeer90_StressIntegration_tot(σi; params=(
+function Vermeer1990_StressIntegration_tot(σi; params=(
         G   = 10e6,
         c   = 0.,
         ϕ   = 40/180*π,
@@ -149,7 +146,7 @@ function Vermeer90_StressIntegration_tot(σi; params=(
 end
 
 @doc raw"""
-    results = Vermeer90_StressIntegration_vdev(σi; params)  ;
+    results = Vermeer1990_StressIntegration_vdev(σi; params)  ;
 
 Function that computes a volumetric-deviatoric return mapping for test 1 in Vermeer (1990). 
 The function takes as input:
@@ -161,11 +158,12 @@ and returns:
 
 # Examples
 ```julia-repl
-julia>  results = Vermeer90_StressIntegration_vdev( (xx=-25e3, yy=-100e3))
+julia>  results = Vermeer1990_StressIntegration_vdev( (xx=-25e3, yy=-100e3))
 
 ```
 """
-function Vermeer90_StressIntegration_vdev(σi; params=(
+function Vermeer1990_StressIntegration_vdev(σi; params=(
+    K   = 0.,
     G   = 10e6,
     c   = 0.0,
     ϕ   = 40/180*π,
@@ -176,6 +174,7 @@ function Vermeer90_StressIntegration_vdev(σi; params=(
     Δt  = 20,
     nt  = 400,
     law = :MC_Vermeer1990,
+    el  = :Vermeer1990,
     pl  = true) # default parameter set
 )
 
@@ -189,6 +188,7 @@ function Vermeer90_StressIntegration_vdev(σi; params=(
     _yield( τ, λ̇, ϕ, c, ηvp, θt, ::Val{:MC_deBorst90})   =  MohrCoulomb_deBorst90_vdev(τ, λ̇, ϕ, c, ηvp, θt)
     
     # Material properties
+    Kb  = params.K
     G   = params.G
     c   = params.c
     ϕ   = params.ϕ
@@ -223,7 +223,10 @@ function Vermeer90_StressIntegration_vdev(σi; params=(
     σ1v         = zeros(nt)
     σ2v         = zeros(nt)
     σ3v         = zeros(nt)
+    θlv         = zeros(nt)
     app_fric[1] = -τxy/(τyy-P)
+
+    ηn, ηs, ηb = ElasticModel(Kb, G, Δt, params)
 
     # Time integration loop
     for it=2:nt
@@ -242,12 +245,14 @@ function Vermeer90_StressIntegration_vdev(σi; params=(
         θ    = atan(v[2,2] / v[1,2])   # σ3 angle
     
         # Trial stress integration
-        ε̇xxp, ε̇yyp, ε̇zzp, ε̇xyp, ∇vp = 0., 0., 0., 0., 0.
+        ε̇xx_pl, ε̇yy_pl, ε̇zz_pl, ε̇xy_pl, ∇v_pl = 0., 0., 0., 0., 0.
         
         # Total strain rates
         ε̇xx = 0.
         ε̇yy = 0. # to be found
-        ε̇yy = (0.333333333333333 * G .* Δt .* (-ε̇xxp + 2.0 * ε̇yyp - ε̇zzp + ∇vp) + 0.5 * P0 + 0.5 * σi.yy - 0.5 * τyy0) ./ (G .* Δt)
+        # ε̇yy = (0.333333333333333 * G .* Δt .* (-ε̇xx_pl + 2.0 * ε̇yy_pl - ε̇zz_pl + ∇v_pl) + 0.5 * P0 + 0.5 * σi.yy - 0.5 * τyy0) ./ (G .* Δt)
+        σyyi = σi.yy
+        ε̇yy = (2.0 * P0 - ε̇xx .* ηb + 6.0 * ε̇xx .* ηs - 4.0 * ε̇xx_pl .* ηs + 4.0 * ε̇yy_pl .* ηn - 4.0 * ε̇zz_pl .* ηs + 2.0 * ηb .* ∇v_pl + 2.0 * σyyi - 2.0 * τyy0) ./ (3.0 * ηb + 4.0 * ηn - 2.0 * ηs)       
         ε̇zz = 1/2*(ε̇xx + ε̇yy)
         ∇v  = ε̇xx + ε̇yy + ε̇zz
 
@@ -257,11 +262,11 @@ function Vermeer90_StressIntegration_vdev(σi; params=(
         ε̇zzd = ε̇zz - 1/3*(ε̇xx + ε̇yy + ε̇zz)
         
         # Deviatoric stress and pressure
-        τxx = τxx0 + 4/3*G*Δt*(ε̇xxd + 1/3*∇v) - 2/3*G*Δt*(ε̇yyd + 1/3*∇v) - 2/3*G*Δt*(ε̇zzd + 1/3*∇v)
-        τyy = τyy0 + 4/3*G*Δt*(ε̇yyd + 1/3*∇v) - 2/3*G*Δt*(ε̇xxd + 1/3*∇v) - 2/3*G*Δt*(ε̇zzd + 1/3*∇v)
-        τzz = τzz0 + 4/3*G*Δt*(ε̇zzd + 1/3*∇v) - 2/3*G*Δt*(ε̇xxd + 1/3*∇v) - 2/3*G*Δt*(ε̇yyd + 1/3*∇v)
+        τxx = τxx0 + ηn*(ε̇xxd + 1/3*∇v) - ηs*(ε̇yyd + 1/3*∇v) - ηs*G*Δt*(ε̇zzd + 1/3*∇v)
+        τyy = τyy0 + ηn*(ε̇yyd + 1/3*∇v) - ηs*(ε̇xxd + 1/3*∇v) - ηs*G*Δt*(ε̇zzd + 1/3*∇v)
+        τzz = τzz0 + ηn*(ε̇zzd + 1/3*∇v) - ηs*(ε̇xxd + 1/3*∇v) - ηs*G*Δt*(ε̇yyd + 1/3*∇v)
         τxy = τxy0 +   2*G*Δt*ε̇xy
-        P   = P0   - 2/3*G*Δt*∇v
+        P   = P0   - ηb*∇v
 
         # Yield criteria and plastic flow direction
         τ_vec .= [τxx; τyy; τzz; τxy; P]
@@ -269,7 +274,6 @@ function Vermeer90_StressIntegration_vdev(σi; params=(
         q      = τ -> yield(τ, λ̇, ψ, c, ηvp, θt, law)
         # dqdτ   = gradient(Forward, q, τ_vec )
         dqdτ   = ForwardDiff.gradient(q, τ_vec )
-
         fc     = f
 
         # Plastic correction: return mapping
@@ -283,12 +287,12 @@ function Vermeer90_StressIntegration_vdev(σi; params=(
             for iter=1:niter
 
                 # Plastic total strain rates
-                ε̇xyp =  λ̇*dQdτxy/2
-                ε̇xxp =  λ̇*dQdτxx 
-                ε̇yyp =  λ̇*dQdτyy
+                ε̇xy_pl =  λ̇*dQdτxy/2
+                ε̇xx_pl =  λ̇*dQdτxx 
+                ε̇yy_pl =  λ̇*dQdτyy
                 # with this one: ezzp'=0, ezzp!=0, tzz=0, ezz'=0
-                ε̇zzp =  1/2*(ε̇xxp + ε̇yyp)
-                ∇vp  = -3/2*λ̇*dQdP
+                ε̇zz_pl =  1/2*(ε̇xx_pl + ε̇yy_pl)
+                ∇v_pl  = -3/2*λ̇*dQdP
                 # with this one: ezzp'!=0, ezzp=0, tzz!=0, ezz'=0 - this allows every return mapping to match on case A and B
                 # ε̇zzp =  λ̇*dQdτzz
                 # ∇vp  = -λ̇*dQdP
@@ -296,8 +300,9 @@ function Vermeer90_StressIntegration_vdev(σi; params=(
 
                 # Total strain rates
                 ε̇xx  = 0.
-                ε̇yy  = (0.333333333333333 * G .* Δt .* (-ε̇xxp + 2.0 * ε̇yyp - ε̇zzp + ∇vp) + 0.5 * P0 + 0.5 * σi.yy - 0.5 * τyy0) ./ (G .* Δt)
-                ε̇zz  = 1/2*(ε̇xx + ε̇yy)
+                # ε̇yy  = (0.333333333333333 * G .* Δt .* (-ε̇xx_pl + 2.0 * ε̇yy_pl - ε̇zz_pl + ∇v_pl) + 0.5 * P0 + 0.5 * σi.yy - 0.5 * τyy0) ./ (G .* Δt)
+                ε̇yy = (2.0 * P0 - ε̇xx .* ηb + 6.0 * ε̇xx .* ηs - 4.0 * ε̇xx_pl .* ηs + 4.0 * ε̇yy_pl .* ηn - 4.0 * ε̇zz_pl .* ηs + 2.0 * ηb .* ∇v_pl + 2.0 * σyyi - 2.0 * τyy0) ./ (3.0 * ηb + 4.0 * ηn - 2.0 * ηs)       
+                ε̇zz = 1/2*(ε̇xx + ε̇yy)
                 ∇v   = ε̇xx + ε̇yy + ε̇zz
 
                 # Deviatoric strain rates
@@ -306,16 +311,16 @@ function Vermeer90_StressIntegration_vdev(σi; params=(
                 ε̇zzd = ε̇zz - 1/3*∇v
 
                 # Deviatoric stress and pressure
-                τxx = τxx0 + 4/3*G*Δt*(ε̇xxd - ε̇xxp + 1/3*∇vp) - 2/3*G*Δt*(ε̇yyd - ε̇yyp + 1/3*∇vp) - 2/3*G*Δt*(ε̇zzd - ε̇zzp + 1/3*∇vp)
-                τyy = τyy0 - 2/3*G*Δt*(ε̇xxd - ε̇xxp + 1/3*∇vp) + 4/3*G*Δt*(ε̇yyd - ε̇yyp + 1/3*∇vp) - 2/3*G*Δt*(ε̇zzd - ε̇zzp + 1/3*∇vp)
-                τzz = τzz0 - 2/3*G*Δt*(ε̇xxd - ε̇xxp + 1/3*∇vp) - 2/3*G*Δt*(ε̇yyd - ε̇yyp + 1/3*∇vp) + 4/3*G*Δt*(ε̇zzd - ε̇zzp + 1/3*∇vp)
-                τxy = τxy0 +   2*G*Δt*(ε̇xy  - ε̇xyp)
-                P   = P0   - 2/3*G*Δt*(∇v- ∇vp) 
+                τxx = τxx0 + 2*ηn*(ε̇xxd - ε̇xx_pl + 1/3*∇v_pl) - 2*ηs*(ε̇yyd - ε̇yy_pl + 1/3*∇v_pl) - 2*ηs*(ε̇zzd - ε̇zz_pl + 1/3*∇v_pl)
+                τyy = τyy0 - 2*ηs*(ε̇xxd - ε̇xx_pl + 1/3*∇v_pl) + 2*ηn*(ε̇yyd - ε̇yy_pl + 1/3*∇v_pl) - 2*ηs*(ε̇zzd - ε̇zz_pl + 1/3*∇v_pl)
+                τzz = τzz0 - 2*ηs*(ε̇xxd - ε̇xx_pl + 1/3*∇v_pl) - 2*ηs*(ε̇yyd - ε̇yy_pl + 1/3*∇v_pl) + 2*ηn*(ε̇zzd - ε̇zz_pl + 1/3*∇v_pl)
+                τxy = τxy0 + 2*G*Δt*(ε̇xy  - ε̇xy_pl)
+                P   = P0   - ηb*(∇v- ∇v_pl) 
                 
                 # Yield criteria
                 τ_vec .= [τxx; τyy; τzz; τxy; P]
                 fc     = yield(τ_vec, λ̇, ϕ, c, ηvp, θt, law)
-                λ̇     += fc / G / 20
+                λ̇     += fc / (ηn + ηb) 
                 if abs(fc)<1e-8 break end
                 if iter==niter error("Failed return mapping") end
             end
@@ -326,8 +331,14 @@ function Vermeer90_StressIntegration_vdev(σi; params=(
         εxy += ε̇xy*Δt
 
         # Principal stresses
-        σm  = [τxx-P τxy; τxy τyy-P]
-        v    = eigvals(σm) 
+        σm  = [τxx-P τxy 0; τxy τyy-P 0; 0 0 τzz-P]
+        v   = eigvals(σm) 
+
+        # Lode
+        τ   = [τxx; τyy; τzz; τxy; P]
+        J2  = 0.5*(τ[1]^2 + τ[2]^2 + τ[3]^2) + τ[4]^2
+        J3  = τ[1]*τ[2]*τ[3] + τ[3]*τ[4]^2
+        θl  = -3/2*sqrt(3)*J3/J2/sqrt(J2)
 
         # Storage
         app_fric[it] = -τxy/(τyy - P)
@@ -338,6 +349,7 @@ function Vermeer90_StressIntegration_vdev(σi; params=(
         σ1v[it]      = v[1]
         σ2v[it]      = v[2]
         σ3v[it]      = v[3]
+        θlv[it]      = θl
     end
-    return (γxy=γxyv[2:end].*100, εyy=εyyv[2:end].*100, app_fric=app_fric[2:end], σxx=.-σxxv[2:end]./1e3, θ=θv[2:end].*(180/π), σ1=σ1v, σ2=σ2v, σ3=σ3v)
+    return (γxy=γxyv[2:end].*100, εyy=εyyv[2:end].*100, app_fric=app_fric[2:end], σxx=.-σxxv[2:end]./1e3, θ=θv[2:end].*(180/π), σ1=σ1v, σ2=σ2v, σ3=σ3v, θl=θlv)
 end

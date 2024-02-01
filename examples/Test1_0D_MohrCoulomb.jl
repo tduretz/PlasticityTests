@@ -8,22 +8,22 @@ function main()
 
     # Formulation of stress-strain rate relationship (:voldev or :total)
     formulation = :voldev 
-    formulation = :total
+    # formulation = :total
 
     # Case A
     σi       = (xx = -25e3, yy=-100e3)
     if formulation==:voldev
-        CaseA_0D = Vermeer90_StressIntegration_vdev(σi)
+        CaseA_0D = Vermeer1990_StressIntegration_vdev(σi)
     elseif formulation==:total
-        CaseA_0D = Vermeer90_StressIntegration_tot(σi)
+        CaseA_0D = Vermeer1990_StressIntegration_tot(σi)
     end
 
     # Case B
     σi       = (xx = -400e3, yy=-100e3)
     if formulation==:voldev
-        CaseB_0D = Vermeer90_StressIntegration_vdev(σi)
+        CaseB_0D = Vermeer1990_StressIntegration_vdev(σi)
     elseif formulation==:total
-        CaseB_0D = Vermeer90_StressIntegration_tot(σi)
+        CaseB_0D = Vermeer1990_StressIntegration_tot(σi)
     end
 
      #------------------------------#

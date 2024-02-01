@@ -133,7 +133,6 @@ function DruckerPrager_tot(σ, λ̇, ϕ, c, ηvp, θt)
     return f
 end
 
-
 Lode(τII, J3) = -3.0*sqrt(3.0)/2.0*J3/τII^3
 
 function MohrCoulomb_AS95_vdev(τ, λ̇, ϕ, c, ηvp, θt)
@@ -157,7 +156,7 @@ end
 
 function MohrCoulomb_deBorst90_vdev(τ, λ̇, ϕ, c, ηvp, θt)
     P   = τ[5]
-    σm  = [τ[1]-P τ[4] 0; τ[3] τ[2]-P 0; 0 0 τ[3]-P]
+    # σm  = [τ[1]-P τ[4] 0; τ[3] τ[2]-P 0; 0 0 τ[3]-P]
     J2  = 0.5*(τ[1]^2 + τ[2]^2 + τ[3]^2) + τ[4]^2
     J3  = τ[1]*τ[2]*τ[3] + τ[3]*τ[4]^2
     L   = -3/2*sqrt(3)*J3/J2/sqrt(J2)
@@ -180,6 +179,3 @@ function MohrCoulomb_deBorst90_vdev(τ, λ̇, ϕ, c, ηvp, θt)
     # f    = τII - τ[5]*sin(ϕ) - c*cos(ϕ) - λ̇*ηvp
     # return f
 end
-
-
-

@@ -3,7 +3,7 @@ using Plots, LinearAlgebra
 # Vermeer (1990)
 # cohesion is 0!
 
-function Vermeer90_FirstTest_Components(σxxi, σyyi)
+function Vermeer1990_FirstTest_Components(σxxi, σyyi)
 
     # Material properties
     G   = 10e6
@@ -57,7 +57,7 @@ function Vermeer90_FirstTest_Components(σxxi, σyyi)
 end
 
 
-function Vermeer90_FirstTest_Matrix(σxxi, σyyi)
+function Vermeer1990_FirstTest_Matrix(σxxi, σyyi)
 
     # Material properties
     G   = 10e6
@@ -173,12 +173,12 @@ function main()
 
     # if style == :componentwise
     #     @info "Run with componentwise approach"
-    #     γxy_A, θv_A, app_fric_A = Vermeer90_FirstTest_Components(σxxA, σyyA)
-    #     γxy_B, θv_B, app_fric_B = Vermeer90_FirstTest_Components(σxxB, σyyB)
+    #     γxy_A, θv_A, app_fric_A = Vermeer1990_FirstTest_Components(σxxA, σyyA)
+    #     γxy_B, θv_B, app_fric_B = Vermeer1990_FirstTest_Components(σxxB, σyyB)
     # else
     #     @info "Run with matrix-vector approach"
-    #     γxy_A, θv_A, app_fric_A = Vermeer90_FirstTest_Matrix(σxxA, σyyA)
-    #     γxy_B, θv_B, app_fric_B = Vermeer90_FirstTest_Matrix(σxxB, σyyB)
+    #     γxy_A, θv_A, app_fric_A = Vermeer1990_FirstTest_Matrix(σxxA, σyyA)
+    #     γxy_B, θv_B, app_fric_B = Vermeer1990_FirstTest_Matrix(σxxB, σyyB)
     # end
 
     # p1 = plot( xlabel = "γxy",  ylabel = "-σxy/σyy" )
