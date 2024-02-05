@@ -15,7 +15,7 @@ end
 
 function Main_VEP_1D(σi; params=(
     #---------------#
-    K   = 20e6,
+    K   = 6.6666666667e6, # K = 3/2*Gv in Vermeer (1990)
     G   = 10e6,
     c   = 0.,
     ϕ   = 40/180*π,
@@ -26,12 +26,12 @@ function Main_VEP_1D(σi; params=(
     Δt  = 20,
     nt  = 400,
     law = :MC_Vermeer1990,
-    el  = :Vermeer1990,
+    oop = :Vermeer1990,
     pl  = true), 
     #---------------#
     visu     = true, 
     make_gif = false,  
-    Ncy      = 10# default parameter set
+    Ncy      = 10   # default parameter set
     #---------------#
     )
 
@@ -83,8 +83,6 @@ function Main_VEP_1D(σi; params=(
         nout_viz = 1 
     end
 
-    ηn, ηs, ηb = ElasticModel(Kb, G, Δt, params)
-
     # Allocate arrays
     Pt         =  Pi*ones(Ncy+1) 
     Ptc        =  Pi*ones(Ncy+1) 
@@ -135,6 +133,9 @@ function Main_VEP_1D(σi; params=(
     ε̇xx_pl     =   zeros(Ncy+1)
     ε̇yy_pl     =   zeros(Ncy+1)
     ε̇zz_pl     =   zeros(Ncy+1)
+    ε̇xxd_pl    =   zeros(Ncy+1)
+    ε̇yyd_pl    =   zeros(Ncy+1)
+    ε̇zzd_pl    =   zeros(Ncy+1)
     ∇v         =   zeros(Ncy+1)
     ∇v_pl      =   zeros(Ncy+1)
 
@@ -182,8 +183,7 @@ function Main_VEP_1D(σi; params=(
             if BC_Vy == :Dirichlet
                 Vy[end] = - Vy[end-1] + 2VyN
             elseif BC_Vy == :Neumann   
-                # Vy[end] = (Pt0[end] .* Δy .* ηe[end] + Vy[end-1] .* ηe[end] .^ 2 + Vy[end-1] .* ηe[end] .* ηve[end] + Δy .* ηe[end] .* σyyi - Δy .* ηve[end] .* τyy0[end]) ./ (ηe[end] .* (ηe[end] + ηve[end]))
-                Vy[end] = (2.0 * Pt0[end] .* Δy + 5.0 * Vy[end-1] .* ηn + 2.0 * Vy[end-1] .* ηs + 2.0 * Δy .* σyyi - 2.0 * Δy .* τyy0[end]) ./ (5.0 * ηn + 2.0 * ηs)
+                Vy[end] = (3.0 * Kb .* Vy[end-1] .* Δt .* ηe[end] + 3.0 * Kb .* Δt .* Δy .* ηe[end] .* ∇v_pl[end] + 3.0 * Pt0[end] .* Δy .* ηe[end] + 4.0 * Vy[end-1] .* ηe[end] .* ηve[end] + 6.0 * Δy .* ε̇yy_pl[end] .* ηe[end] .* ηve[end] + 3.0 * Δy .* ηe[end] .* σyyi - 3.0 * Δy .* ηve[end] .* τyy0[end]) ./ (ηe[end] .* (3.0 * Kb .* Δt + 4.0 * ηve[end]))
             end
            
             @. ε̇xy  =  0.5*(Vx[2:end] - Vx[1:end-1])/Δy
@@ -197,9 +197,9 @@ function Main_VEP_1D(σi; params=(
             @. ε̇zzd = ε̇zz - 1/3*∇v
 
             # Stress
-            @. τxx     =  2*ηn  * (ε̇xxd + 1/3*∇v + τxx0/(2*ηn)) - 2*ηs * (ε̇yyd + 1/3*∇v)               - 2*ηs * (ε̇zzd + 1/3*∇v)
-            @. τyy     = -2*ηs  * (ε̇xxd + 1/3*∇v)               + 2*ηn * (ε̇yyd + 1/3*∇v + τyy0/(2*ηn)) - 2*ηs * (ε̇zzd + 1/3*∇v)
-            @. τzz     = -2*ηs  * (ε̇xxd + 1/3*∇v)               - 2*ηs * (ε̇yyd + 1/3*∇v)               + 2*ηn * (ε̇zzd + 1/3*∇v + τzz0/(2*ηn))
+            @. τxx     =  2*ηve * (ε̇xxd + τxx0/(2*ηe))
+            @. τyy     =  2*ηve * (ε̇yyd + τyy0/(2*ηe))
+            @. τzz     =  2*ηve * (ε̇zzd + τzz0/(2*ηe))
             @. τxy     =  2*ηve * (ε̇xy  + τxy0/(2*ηe)) 
             @. τii     = sqrt(τxy^2 + 0.5*(τyy.^2 + τxx.^2 + τzz.^2))
 
@@ -207,8 +207,9 @@ function Main_VEP_1D(σi; params=(
             @. F    = τii - Coh*cos(ϕ) - Pt*sin(ϕ)
             @. Ptc  = Pt
             @. ηvep = ηve
+            @. ispl = 0
             @. ispl[F>=0] = 1
-            @. ε̇iiᵉᶠᶠ   = sqrt( (ε̇xy + τxy0/2/ηe)^2 + 0.5*( (ε̇xxd + τxx0/(2*ηn))^2 + ((ε̇yyd + τyy0/(2*ηn))).^2 + ((ε̇zzd + τzz0/(2*ηn))).^2 ) ) 
+            @. ε̇iiᵉᶠᶠ   = sqrt( (ε̇xy + τxy0/2/ηe)^2 + 0.5*( (ε̇xxd + τxx0/(2*ηe))^2 + ((ε̇yyd + τyy0/(2*ηe))).^2 + ((ε̇zzd + τzz0/(2*ηe))).^2 ) ) 
             for it=1:50
                 # @. λ̇      = F / (ηvp + ηve + Kb*Δt*sin(ϕ)*sin(ψ))
                 # @. λ̇rel   = (1.0-rel)*λ̇rel + rel*λ̇   
@@ -216,17 +217,24 @@ function Main_VEP_1D(σi; params=(
                 @. ηvep   = (Coh*cos(ϕ) + Ptc*sin(ϕ) + ηvp*λ̇rel) / 2.0 / ε̇iiᵉᶠᶠ
                 @. ε̇xx_pl = λ̇rel*(τxx/2/τii)
                 @. ε̇yy_pl = λ̇rel*(τyy/2/τii)
-                @. ε̇zz_pl = λ̇rel*(τxx/2/τii + τyy/2/τii)/2   # dqdτzz*λ̇rel
                 @. ε̇xy_pl = λ̇rel*(τxy/2/τii)
-                @. ∇v_pl  = 3/2*sin(ψ)*λ̇rel
-                @. Ptc    = Pt0  - ηb*(∇v - ∇v_pl)
-                @. τxx    =  2*ηn  * (ε̇xxd + τxx0/(2*ηn) -  ε̇xx_pl) - 2*ηs * (ε̇yyd               -  ε̇yy_pl) - 2*ηs * (ε̇zzd               -  ε̇zz_pl)
-                @. τyy    = -2*ηs  * (ε̇xxd               -  ε̇xx_pl) + 2*ηn * (ε̇yyd + τyy0/(2*ηn) -  ε̇yy_pl) - 2*ηs * (ε̇zzd               -  ε̇zz_pl)
-                @. τzz    = -2*ηs  * (ε̇xxd               -  ε̇xx_pl) - 2*ηs * (ε̇yyd               -  ε̇yy_pl) + 2*ηn * (ε̇zzd + τzz0/(2*ηn) -  ε̇zz_pl)
+                @. ε̇zz_pl = λ̇rel*(τzz/2/τii)  
+                @. ∇v_pl  = sin(ψ)*λ̇rel
+                if params.oop == :Vermeer1990
+                    @. ε̇zz_pl = λ̇rel*(τxx/2/τii + τyy/2/τii)/2   # dqdτzz*λ̇rel
+                    @. ∇v_pl  = 3/2*sin(ψ)*λ̇rel
+                end
+                @. ε̇xxd_pl = ε̇xx_pl - 1/3*∇v_pl
+                @. ε̇yyd_pl = ε̇yy_pl - 1/3*∇v_pl
+                @. ε̇zzd_pl = ε̇zz_pl - 1/3*∇v_pl
+                @. Ptc    = Pt0  - Kb*Δt*(∇v - ∇v_pl)
+                @. τxx    =  2*ηve * (ε̇xxd + τxx0/(2*ηe) -  ε̇xx_pl)
+                @. τyy    =  2*ηve * (ε̇yyd + τyy0/(2*ηe) -  ε̇yy_pl)
+                @. τzz    =  2*ηve * (ε̇zzd + τzz0/(2*ηe) -  ε̇zz_pl)
                 @. τxy    =  2*ηve * (ε̇xy  + τxy0/(2*ηe) -  ε̇xy_pl) 
                 @. τii    = sqrt(τxy^2 + 0.5*(τyy^2 + τxx^2 + τzz^2))
                 @. Fc     = τii - Coh*cos(ϕ) - Ptc*sin(ϕ) - ηvp*λ̇rel
-                @. λ̇rel  += (F.>0) .* Fc / (ηvp + ηve + ηb*sin(ϕ)*sin(ψ))
+                @. λ̇rel  += (F.>0) .* Fc / (ηvp + ηve + Kb*Δt*sin(ϕ)*sin(ψ))
                 if maximum(Fc) < ϵ break end 
             end
 
@@ -247,7 +255,7 @@ function Main_VEP_1D(σi; params=(
             @. ΔτPt  = ηvep/Δy/G/Δt/3/10
             
             # Residuals
-            @. RPt          =  (- ηb*∇v - (Pt - Pt0))
+            @. RPt          =  (- Kb*Δt*∇v - (Pt - Pt0))
             @. RVx[2:end-1] =  ((τxy[2:end] - τxy[1:end-1])/Δy )
             @. RVy[2:end-1] =  ((τyy[2:end] - τyy[1:end-1])/Δy - (Ptc[2:end] - Ptc[1:end-1])/Δy)
             
@@ -330,7 +338,7 @@ function Main_VEP_1D(σi; params=(
 
             p1 = plot( title = "γxy [%]", xlabel = "γxy [%]", ylabel = "y [-]", legend=:none )
             p1 = plot!(ustrip.(2 .* εxy*100),           ustrip.(dimensionalize(yv, m, CharDim)./1e3), label="γxy" )
-            # p1=plot!(ustrip.(2 .* εxy[ispl.==1]*100), ustrip.(dimensionalize(yv[ispl.==1], m, CharDim)./1e3), linewidth=5 )
+            p1 = scatter!(ustrip.(2 .* εxy[ispl.==1]*100), ustrip.(dimensionalize(yv[ispl.==1], m, CharDim)./1e3), linewidth=5 )
 
             # p2=plot(title = "Velocity", xlabel = L"$Vx$ [cm/y]", ylabel = L"$y$ [-]" )
             # p2=plot!(ustrip.(dimensionalize(Vx, m/s, CharDim)), ustrip.(dimensionalize(yc, m, CharDim)./1e3) )

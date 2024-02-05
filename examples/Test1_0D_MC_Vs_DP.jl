@@ -12,13 +12,17 @@ function main()
     c  = 0.
     θt = 5.0*π/180
 
+    # Vermeer (1990)
+    Gv = 10e6
+    Kv = 2/3*Gv
+
     # Case A - MC
     σi       = (xx = -25e3, yy=-100e3)
     CaseA_0D = Vermeer1990_StressIntegration_vdev(σi)
 
     # Case A - Drucker-Prager 
     params=(
-        K   = 0.,
+        K   = Kv,
         G   = 10e6,
         c   = c,
         ϕ   = ϕ,
@@ -29,73 +33,73 @@ function main()
         Δt  = 20,
         nt  = 400,
         law = :DruckerPrager,
-        el  = :Vermeer1990,
+        oop = :Vermeer1990,
         pl  = true)
     CaseA_0D_DP0 = Vermeer1990_StressIntegration_vdev(σi; params)
 
-    # Case A - Drucker-Prager: compression fit - Circumbscribed
-    α = 2*sin(ϕ) / (sqrt(3)*(3 - sin(ϕ)))
-    β = 2*sin(ψ) / (sqrt(3)*(3 - sin(ψ)))
-    H = c/tan(ϕ)
-    params=(
-        K   = 0.,
-        G   = 10e6,
-        c   = 3*α*H/cos(asin(3*α)),
-        ϕ   = 3*α,
-        ψ   = 3*β,
-        θt  = 25/180*π,
-        ηvp = 0.,
-        γ̇xy = 0.00001,
-        Δt  = 20,
-        nt  = 400,
-        law = :DruckerPrager,
-        el  = :Vermeer1990,
-        pl  = true)
-    CaseA_0D_DP1 = Vermeer1990_StressIntegration_vdev(σi; params)
+    # # Case A - Drucker-Prager: compression fit - Circumbscribed
+    # α = 2*sin(ϕ) / (sqrt(3)*(3 - sin(ϕ)))
+    # β = 2*sin(ψ) / (sqrt(3)*(3 - sin(ψ)))
+    # H = c/tan(ϕ)
+    # params=(
+    #     K   = Kv,
+    #     G   = 10e6,
+    #     c   = 3*α*H/cos(asin(3*α)),
+    #     ϕ   = 3*α,
+    #     ψ   = 3*β,
+    #     θt  = 25/180*π,
+    #     ηvp = 0.,
+    #     γ̇xy = 0.00001,
+    #     Δt  = 20,
+    #     nt  = 400,
+    #     law = :DruckerPrager,
+    #     oop = :Vermeer1990,
+    #     pl  = true)
+    # CaseA_0D_DP1 = Vermeer1990_StressIntegration_vdev(σi; params)
 
-    # Case A - Drucker-Prager: extension fit - Middle circumscribed
-    α = 2*sin(ϕ) / (sqrt(3)*(3 + sin(ϕ)))
-    β = 2*sin(ψ) / (sqrt(3)*(3 + sin(ψ)))
-    H = c/tan(ϕ)
-    params=(
-        K   = 0.,
-        G   = 10e6,
-        c   = 3*α*H/cos(asin(3*α)),
-        ϕ   = 3*α,
-        ψ   = 3*β,
-        θt  = 25/180*π,
-        ηvp = 0.,
-        γ̇xy = 0.00001,
-        Δt  = 20,
-        nt  = 400,
-        law = :DruckerPrager,
-        el  = :Vermeer1990,
-        pl  = true)
-    CaseA_0D_DP2 = Vermeer1990_StressIntegration_vdev(σi; params)
+    # # Case A - Drucker-Prager: extension fit - Middle circumscribed
+    # α = 2*sin(ϕ) / (sqrt(3)*(3 + sin(ϕ)))
+    # β = 2*sin(ψ) / (sqrt(3)*(3 + sin(ψ)))
+    # H = c/tan(ϕ)
+    # params=(
+    #     K   = Kv,
+    #     G   = 10e6,
+    #     c   = 3*α*H/cos(asin(3*α)),
+    #     ϕ   = 3*α,
+    #     ψ   = 3*β,
+    #     θt  = 25/180*π,
+    #     ηvp = 0.,
+    #     γ̇xy = 0.00001,
+    #     Δt  = 20,
+    #     nt  = 400,
+    #     law = :DruckerPrager,
+    #     oop = :Vermeer1990,
+    #     pl  = true)
+    # CaseA_0D_DP2 = Vermeer1990_StressIntegration_vdev(σi; params)
 
-    # Case A - Drucker-Prager: inscribed fit
-    α = 1*sin(ϕ) / (sqrt(9 + 3*sin(ϕ)^2))
-    β = 1*sin(ψ) / (sqrt(9 + 3*sin(ψ)^2))
-    H = c/tan(ϕ)
-    params=(
-        K   = 0.,
-        G   = 10e6,
-        c   = 3*α*H/cos(asin(3*α)),
-        ϕ   = 3*α,
-        ψ   = 3*β,
-        θt  = 25/180*π,
-        ηvp = 0.,
-        γ̇xy = 0.00001,
-        Δt  = 20,
-        nt  = 400,
-        law = :DruckerPrager,
-        el  = :Vermeer1990,
-        pl  = true)
-    CaseA_0D_DP3 = Vermeer1990_StressIntegration_vdev(σi; params)
+    # # Case A - Drucker-Prager: inscribed fit
+    # α = 1*sin(ϕ) / (sqrt(9 + 3*sin(ϕ)^2))
+    # β = 1*sin(ψ) / (sqrt(9 + 3*sin(ψ)^2))
+    # H = c/tan(ϕ)
+    # params=(
+    #     K   = Kv,
+    #     G   = 10e6,
+    #     c   = 3*α*H/cos(asin(3*α)),
+    #     ϕ   = 3*α,
+    #     ψ   = 3*β,
+    #     θt  = 25/180*π,
+    #     ηvp = 0.,
+    #     γ̇xy = 0.00001,
+    #     Δt  = 20,
+    #     nt  = 400,
+    #     law = :DruckerPrager,
+    #     oop = :Vermeer1990,
+    #     pl  = true)
+    # CaseA_0D_DP3 = Vermeer1990_StressIntegration_vdev(σi; params)
 
     # Case A - Mohr-Coulomb from Abbo and Sloan (1995) 
     params=(
-        K   = 0.,
+        K   = Kv,
         G   = 10e6,
         c   = c,
         ϕ   = ϕ,
@@ -106,13 +110,13 @@ function main()
         Δt  = 20,
         nt  = 400,
         law = :MC_AS95,
-        el  = :Vermeer1990,
+        oop = :Vermeer1990,
         pl  = true)
     CaseA_0D_MC_AB = Vermeer1990_StressIntegration_vdev(σi; params)
 
     # Case A - Mohr-Coulomb from de Borst (1990) 
     params=(
-        K   = 0.,
+        K   = Kv,
         G   = 10e6,
         c   = c,
         ϕ   = ϕ,
@@ -123,7 +127,7 @@ function main()
         Δt  = 20,
         nt  = 140,
         law = :MC_deBorst90,
-        el  = :Vermeer1990,
+        oop = :Vermeer1990,
         pl  = true)
     CaseA_0D_MC_dB = Vermeer1990_StressIntegration_vdev(σi; params)
 
@@ -135,7 +139,7 @@ function main()
 
     # Case B - Drucker-Prager 
     params=(
-        K   = 0.,
+        K   = Kv,
         G   = 10e6,
         c   = c,
         ϕ   = ϕ,
@@ -146,73 +150,73 @@ function main()
         Δt  = 20,
         nt  = 400,
         law = :DruckerPrager,
-        el  = :Vermeer1990,
+        oop = :Vermeer1990,
         pl  = true)
     CaseB_0D_DP0 = Vermeer1990_StressIntegration_vdev(σi; params)
 
-    # Case B - Drucker-Prager: compression fit
-    α = 2*sin(ϕ) / (sqrt(3)*(3 - sin(ϕ)))
-    β = 2*sin(ψ) / (sqrt(3)*(3 - sin(ψ)))
-    H = c/tan(ϕ)
-    params=(
-        K   = 0.,
-        G   = 10e6,
-        c   = 3*α*H/cos(asin(3*α)),
-        ϕ   = asin(3*α),
-        ψ   = asin(3*β),
-        θt  = 25/180*π,
-        ηvp = 0.,
-        γ̇xy = 0.00001,
-        Δt  = 20,
-        nt  = 400,
-        law = :DruckerPrager,
-        el  = :Vermeer1990,
-        pl  = true)
-    CaseB_0D_DP1 = Vermeer1990_StressIntegration_vdev(σi; params)
+    # # Case B - Drucker-Prager: compression fit
+    # α = 2*sin(ϕ) / (sqrt(3)*(3 - sin(ϕ)))
+    # β = 2*sin(ψ) / (sqrt(3)*(3 - sin(ψ)))
+    # H = c/tan(ϕ)
+    # params=(
+    #     K   = Kv,
+    #     G   = 10e6,
+    #     c   = 3*α*H/cos(asin(3*α)),
+    #     ϕ   = asin(3*α),
+    #     ψ   = asin(3*β),
+    #     θt  = 25/180*π,
+    #     ηvp = 0.,
+    #     γ̇xy = 0.00001,
+    #     Δt  = 20,
+    #     nt  = 400,
+    #     law = :DruckerPrager,
+    #     oop = :Vermeer1990,
+    #     pl  = true)
+    # CaseB_0D_DP1 = Vermeer1990_StressIntegration_vdev(σi; params)
 
-    # Case B - Drucker-Prager: extension fit
-    α = 2*sin(ϕ) / (sqrt(3)*(3 + sin(ϕ)))
-    β = 2*sin(ψ) / (sqrt(3)*(3 + sin(ψ)))
-    H = c/tan(ϕ)
-    params=(
-        K   = 0.,
-        G   = 10e6,
-        c   = 3*α*H/cos(asin(3*α)),
-        ϕ   = asin(3*α),
-        ψ   = asin(3*β),
-        θt  = 25/180*π,
-        ηvp = 0.,
-        γ̇xy = 0.00001,
-        Δt  = 20,
-        nt  = 400,
-        law = :DruckerPrager,
-        el  = :Vermeer1990,
-        pl  = true)
-    CaseB_0D_DP2 = Vermeer1990_StressIntegration_vdev(σi; params)
+    # # Case B - Drucker-Prager: extension fit
+    # α = 2*sin(ϕ) / (sqrt(3)*(3 + sin(ϕ)))
+    # β = 2*sin(ψ) / (sqrt(3)*(3 + sin(ψ)))
+    # H = c/tan(ϕ)
+    # params=(
+    #     K   = Kv,
+    #     G   = 10e6,
+    #     c   = 3*α*H/cos(asin(3*α)),
+    #     ϕ   = asin(3*α),
+    #     ψ   = asin(3*β),
+    #     θt  = 25/180*π,
+    #     ηvp = 0.,
+    #     γ̇xy = 0.00001,
+    #     Δt  = 20,
+    #     nt  = 400,
+    #     law = :DruckerPrager,
+    #     oop = :Vermeer1990,
+    #     pl  = true)
+    # CaseB_0D_DP2 = Vermeer1990_StressIntegration_vdev(σi; params)
 
-    # Case B - Drucker-Prager: inscribed fit
-    α = 1*sin(ϕ) / (sqrt(9 + 3*sin(ϕ)^2))
-    β = 1*sin(ψ) / (sqrt(9 + 3*sin(ψ)^2))
-    H = c/tan(ϕ)
-    params=(
-        K   = 0.,
-        G   = 10e6,
-        c   = 3*α*H/cos(asin(3*α)),
-        ϕ   = asin(3*α),
-        ψ   = asin(3*β),
-        θt  = 25/180*π,
-        ηvp = 0.,
-        γ̇xy = 0.00001,
-        Δt  = 20,
-        nt  = 400,
-        law = :DruckerPrager,
-        el  = :Vermeer1990,
-        pl  = true)
-    CaseB_0D_DP3 = Vermeer1990_StressIntegration_vdev(σi; params)
+    # # Case B - Drucker-Prager: inscribed fit
+    # α = 1*sin(ϕ) / (sqrt(9 + 3*sin(ϕ)^2))
+    # β = 1*sin(ψ) / (sqrt(9 + 3*sin(ψ)^2))
+    # H = c/tan(ϕ)
+    # params=(
+    #     K   = Kv,
+    #     G   = 10e6,
+    #     c   = 3*α*H/cos(asin(3*α)),
+    #     ϕ   = asin(3*α),
+    #     ψ   = asin(3*β),
+    #     θt  = 25/180*π,
+    #     ηvp = 0.,
+    #     γ̇xy = 0.00001,
+    #     Δt  = 20,
+    #     nt  = 400,
+    #     law = :DruckerPrager,
+    #     oop = :Vermeer1990,
+    #     pl  = true)
+    # CaseB_0D_DP3 = Vermeer1990_StressIntegration_vdev(σi; params)
 
     # Case B - Mohr-Coulomb from Abbo and Sloan (1995) 
     params=(
-        K   = 0.,
+        K   = Kv,
         G   = 10e6,
         c   = c,
         ϕ   = ϕ,
@@ -223,13 +227,13 @@ function main()
         Δt  = 20,
         nt  = 400,
         law = :MC_AS95,
-        el  = :Vermeer1990,
+        oop = :Vermeer1990,
         pl  = true)
     CaseB_0D_MC_AB = Vermeer1990_StressIntegration_vdev(σi; params)
 
     # Case B - Mohr-Coulomb from de Borst (1990) 
     params=(
-        K   = 0.,
+        K   = Kv,
         G   = 10e6,
         c   = c,
         ϕ   = ϕ,
@@ -238,9 +242,9 @@ function main()
         ηvp = 0.,
         γ̇xy = 0.00001,
         Δt  = 20,
-        nt  = 300,
+        nt  = 200,
         law = :MC_deBorst90,
-        el  = :Vermeer1990,
+        oop = :Vermeer1990,
         pl  = true)
     CaseB_0D_MC_dB = Vermeer1990_StressIntegration_vdev(σi; params)
 
@@ -268,7 +272,7 @@ function main()
     # ------------------------------ #
     # Panel (1,2) - Horizontal stress
     p2 = plot(title="Horizontal stress", ylabel="-σxx [kPa]")
-    # ---- #
+    # # ---- #
     p2 = plot!(CaseA_0D.γxy, CaseA_0D.σxx, label="A: 0D", color=:blue)
     p2 = plot!(CaseA_0D.γxy, CaseA_0D_DP0.σxx, label="A: 0D DP0", color=:blue, linestyle=:dash)
     # p2 = plot!(CaseA_0D.γxy, CaseA_0D_DP1.σxx, label="A: 0D DP1", color=:blue, linestyle=:dot)

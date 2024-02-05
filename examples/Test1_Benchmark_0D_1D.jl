@@ -6,9 +6,13 @@ function main()
     CaseA = ExtractDataCase("CaseA")
     CaseB = ExtractDataCase("CaseB")
 
+    # Vermeer (1990)
+    Gv = 10e6
+    Kv = 2/3*Gv
+
     params=(
-        K   = 0.,
-        G   = 10e6,
+        K   = Kv,
+        G   = Gv,
         c   = 0.0,
         ϕ   = 40/180*π,
         ψ   = 10/180*π,
@@ -18,7 +22,7 @@ function main()
         Δt  = 20,
         nt  = 200,
         law = :DruckerPrager,
-        el  = :Vermeer1990,
+        oop = :Vermeer1990,
         pl  = true) # default parameter set
 
     # Case A

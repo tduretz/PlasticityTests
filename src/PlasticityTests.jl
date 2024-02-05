@@ -17,8 +17,9 @@ export MohrCoulombVermeer1990_vdev
 export MohrCoulombVermeer1990_tot
 export DruckerPrager_vdev
 
-include("./ElasticityModels.jl")
-export ElasticModel
+include("./StressIntegration0D_Vermeer1990.jl")
+export Vermeer1990_Test1_Components
+export Vermeer1990_Test1_MatVec
 
 include("./StressIntegration0D.jl")
 export Vermeer1990_StressIntegration_vdev

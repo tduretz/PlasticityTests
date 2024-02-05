@@ -14,14 +14,18 @@ function main()
     c  = 0.
     θt = 2.0*π/180
 
+    # Vermeer (1990)
+    Gv = 10e6
+    Kv = 2/3*Gv
+
     # Case A - MC
     σi       = (xx = -25e3, yy=-100e3)
     CaseA_0D = Vermeer1990_StressIntegration_vdev(σi)
 
     # Case A - Drucker-Prager 
     params=(
-        K   = 0.,
-        G   = 10e6,
+        K   = Kv,
+        G   = Gv,
         c   = c,
         ϕ   = ϕ,
         ψ   = ψ,
@@ -31,7 +35,7 @@ function main()
         Δt  = 20,
         nt  = 400,
         law = :DruckerPrager,
-        el  = :Vermeer1990,
+        oop = :Vermeer1990,
         pl  = true)
     CaseA_0D_DP0 = Vermeer1990_StressIntegration_vdev(σi; params)
 
@@ -43,8 +47,8 @@ function main()
 
     # Case B - Drucker-Prager 
     params=(
-        K   = 0.,
-        G   = 10e6,
+        K   = Kv,
+        G   = Gv,
         c   = c,
         ϕ   = ϕ,
         ψ   = ψ,
@@ -54,7 +58,7 @@ function main()
         Δt  = 20,
         nt  = 400,
         law = :DruckerPrager,
-        el  = :Vermeer1990,
+        oop = :Vermeer1990,
         pl  = true)
     CaseB_0D_DP0 = Vermeer1990_StressIntegration_vdev(σi; params)
 

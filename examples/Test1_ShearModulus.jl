@@ -5,9 +5,13 @@ function main()
     # Load digitised data from test 1 of Vermeer (1990)
     CaseB = ExtractDataCase("CaseB")
 
+    # Vermeer (1990)
+    Gv = 10e6
+    Kv = 2/3*Gv
+
     # Case B - Gref/3.5
     params=(
-        K   = 0.,
+        K   = 2/3*2.857142857142857e6,
         G   = 2.857142857142857e6,
         c   = 0.0,
         ϕ   = 40/180*π,
@@ -18,7 +22,7 @@ function main()
         Δt  = 20,
         nt  = 600,
         law = :DruckerPrager,
-        el  = :Vermeer1990,
+        oop = :Vermeer1990,
         pl  = true) # default parameter set
     σi       = (xx = -400e3, yy=-100e3)
     CaseB_0D_00 = Vermeer1990_StressIntegration_vdev(σi; params)
@@ -26,8 +30,8 @@ function main()
 
     # Case B - Gref
     params=(
-        K   = 0.,
-        G   = 10e6,
+        K   = Kv,
+        G   = Gv,
         c   = 0.0,
         ϕ   = 40/180*π,
         ψ   = 10/180*π,
@@ -37,7 +41,7 @@ function main()
         Δt  = 20,
         nt  = 600,
         law = :DruckerPrager,
-        el  = :Vermeer1990,
+        oop = :Vermeer1990,
         pl  = true) # default parameter set
     σi       = (xx = -400e3, yy=-100e3)
     CaseB_0D_10 = Vermeer1990_StressIntegration_vdev(σi; params)
@@ -45,7 +49,7 @@ function main()
 
     # Case B - Gref*3.5
     params=(
-        K   = 0.,
+        K   = 2/3*35e6,
         G   = 35e6,
         c   = 0.0,
         ϕ   = 40/180*π,
@@ -56,7 +60,7 @@ function main()
         Δt  = 20,
         nt  = 600,
         law = :DruckerPrager,
-        el  = :Vermeer1990,
+        oop = :Vermeer1990,
         pl  = true) # default parameter set
     σi       = (xx = -400e3, yy=-100e3)
     CaseB_0D_20 = Vermeer1990_StressIntegration_vdev(σi; params)

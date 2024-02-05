@@ -14,6 +14,7 @@ julia>  results = Vermeer1990_StressIntegration_tot( (xx=-25e3, yy=-100e3))
 ```
 """
 function Vermeer1990_StressIntegration_tot(σi; params=(
+        K   = 6.6666666667e6, # K = 3/2*Gv in Vermeer (1990)
         G   = 10e6,
         c   = 0.,
         ϕ   = 40/180*π,
@@ -24,6 +25,7 @@ function Vermeer1990_StressIntegration_tot(σi; params=(
         Δt  = 20,
         nt  = 400,
         law = :MC_Vermeer1990,
+        oop = :Vermeer1990,
         pl  = true) # default parameter set
     )
 
@@ -163,7 +165,7 @@ julia>  results = Vermeer1990_StressIntegration_vdev( (xx=-25e3, yy=-100e3))
 ```
 """
 function Vermeer1990_StressIntegration_vdev(σi; params=(
-    K   = 0.,
+    K   = 6.6666666667e6, # K = 3/2*Gv in Vermeer (1990)
     G   = 10e6,
     c   = 0.0,
     ϕ   = 40/180*π,
@@ -174,11 +176,11 @@ function Vermeer1990_StressIntegration_vdev(σi; params=(
     Δt  = 20,
     nt  = 400,
     law = :MC_Vermeer1990,
-    el  = :Vermeer1990,
+    oop = :Vermeer1990,
     pl  = true) # default parameter set
 )
 
-    @info "Stress integration: volumetric-deviatoric split"
+    @info "Stress integration: volumetric-deviatoric split v2 with $(params.law)"
     law = params.law
     _type(law) = Val{law}()
     yield(  τ, λ̇, ϕ, c, ηvp, θt, law) = _yield( τ, λ̇, ϕ, c, ηvp, θt, _type(law)) 
@@ -226,8 +228,6 @@ function Vermeer1990_StressIntegration_vdev(σi; params=(
     θlv         = zeros(nt)
     app_fric[1] = -τxy/(τyy-P)
 
-    ηn, ηs, ηb = ElasticModel(Kb, G, Δt, params)
-
     # Time integration loop
     for it=2:nt
 
@@ -245,14 +245,12 @@ function Vermeer1990_StressIntegration_vdev(σi; params=(
         θ    = atan(v[2,2] / v[1,2])   # σ3 angle
     
         # Trial stress integration
-        ε̇xx_pl, ε̇yy_pl, ε̇zz_pl, ε̇xy_pl, ∇v_pl = 0., 0., 0., 0., 0.
+        ε̇xxd_pl, ε̇yyd_pl, ε̇zzd_pl, ε̇xy_pl, ∇v_pl = 0., 0., 0., 0., 0.
         
         # Total strain rates
         ε̇xx = 0.
         ε̇yy = 0. # to be found
-        # ε̇yy = (0.333333333333333 * G .* Δt .* (-ε̇xx_pl + 2.0 * ε̇yy_pl - ε̇zz_pl + ∇v_pl) + 0.5 * P0 + 0.5 * σi.yy - 0.5 * τyy0) ./ (G .* Δt)
-        σyyi = σi.yy
-        ε̇yy = (2.0 * P0 - ε̇xx .* ηb + 6.0 * ε̇xx .* ηs - 4.0 * ε̇xx_pl .* ηs + 4.0 * ε̇yy_pl .* ηn - 4.0 * ε̇zz_pl .* ηs + 2.0 * ηb .* ∇v_pl + 2.0 * σyyi - 2.0 * τyy0) ./ (3.0 * ηb + 4.0 * ηn - 2.0 * ηs)       
+        ε̇yy = (4.0 * G .* Δt .* ε̇yyd_pl - Kb .* Δt .* ε̇xx + 2.0 * Kb .* Δt .* ∇v_pl + 2.0 * P0 + 2.0 * σi.yy - 2.0 * τyy0) ./ (Δt .* (4.0 * G + 3.0 * Kb))
         ε̇zz = 1/2*(ε̇xx + ε̇yy)
         ∇v  = ε̇xx + ε̇yy + ε̇zz
 
@@ -262,11 +260,11 @@ function Vermeer1990_StressIntegration_vdev(σi; params=(
         ε̇zzd = ε̇zz - 1/3*(ε̇xx + ε̇yy + ε̇zz)
         
         # Deviatoric stress and pressure
-        τxx = τxx0 + ηn*(ε̇xxd + 1/3*∇v) - ηs*(ε̇yyd + 1/3*∇v) - ηs*G*Δt*(ε̇zzd + 1/3*∇v)
-        τyy = τyy0 + ηn*(ε̇yyd + 1/3*∇v) - ηs*(ε̇xxd + 1/3*∇v) - ηs*G*Δt*(ε̇zzd + 1/3*∇v)
-        τzz = τzz0 + ηn*(ε̇zzd + 1/3*∇v) - ηs*(ε̇xxd + 1/3*∇v) - ηs*G*Δt*(ε̇yyd + 1/3*∇v)
-        τxy = τxy0 +   2*G*Δt*ε̇xy
-        P   = P0   - ηb*∇v
+        τxx = τxx0 + 2*G*Δt*(ε̇xxd)
+        τyy = τyy0 + 2*G*Δt*(ε̇yyd)
+        τzz = τzz0 + 2*G*Δt*(ε̇zzd)
+        τxy = τxy0 + 2*G*Δt*ε̇xy
+        P   = P0   - Kb*Δt*∇v
 
         # Yield criteria and plastic flow direction
         τ_vec .= [τxx; τyy; τzz; τxy; P]
@@ -284,45 +282,65 @@ function Vermeer1990_StressIntegration_vdev(σi; params=(
             dQdτxy = dqdτ[4]
             dQdP   = dqdτ[5]
             λ̇      = 0.0
+             
             for iter=1:niter
 
                 # Plastic total strain rates
-                ε̇xy_pl =  λ̇*dQdτxy/2
-                ε̇xx_pl =  λ̇*dQdτxx 
-                ε̇yy_pl =  λ̇*dQdτyy
-                # with this one: ezzp'=0, ezzp!=0, tzz=0, ezz'=0
-                ε̇zz_pl =  1/2*(ε̇xx_pl + ε̇yy_pl)
-                ∇v_pl  = -3/2*λ̇*dQdP
-                # with this one: ezzp'!=0, ezzp=0, tzz!=0, ezz'=0 - this allows every return mapping to match on case A and B
-                # ε̇zzp =  λ̇*dQdτzz
-                # ∇vp  = -λ̇*dQdP
+                ε̇xy_pl  =  λ̇*dQdτxy/2
+                ε̇xxd_pl =  λ̇*dQdτxx 
+                ε̇yyd_pl =  λ̇*dQdτyy
+                # with this one: ezzp'!=0, ezzp=0, tzz!=0, ezz'=0\
                 # ∇vp = ε̇xxp + ε̇yyp + ε̇zzp so ideally ε̇zzp = 0 such that ∇vp = -λ*dQdP
+                ε̇zzd_pl =  λ̇*dQdτzz
+                ∇v_pl  = -λ̇*dQdP
+            
+                if params.oop == :Vermeer1990
+                    # with this one: ezzp'=0, ezzp!=0, tzz=0, ezz'=0
+                    # this allows every return mapping to match on case A and B of Vermeer (1990)
+                    ε̇zzd_pl =  1/2*λ̇*(dQdτxx + dQdτyy)
+                    ∇v_pl   = -3/2*λ̇*dQdP
+                end
 
                 # Total strain rates
-                ε̇xx  = 0.
-                # ε̇yy  = (0.333333333333333 * G .* Δt .* (-ε̇xx_pl + 2.0 * ε̇yy_pl - ε̇zz_pl + ∇v_pl) + 0.5 * P0 + 0.5 * σi.yy - 0.5 * τyy0) ./ (G .* Δt)
-                ε̇yy = (2.0 * P0 - ε̇xx .* ηb + 6.0 * ε̇xx .* ηs - 4.0 * ε̇xx_pl .* ηs + 4.0 * ε̇yy_pl .* ηn - 4.0 * ε̇zz_pl .* ηs + 2.0 * ηb .* ∇v_pl + 2.0 * σyyi - 2.0 * τyy0) ./ (3.0 * ηb + 4.0 * ηn - 2.0 * ηs)       
+                ε̇xx = 0.      
+                ε̇yy = (4.0 * G .* Δt .* ε̇yyd_pl - Kb .* Δt .* ε̇xx + 2.0 * Kb .* Δt .* ∇v_pl + 2.0 * P0 + 2.0 * σi.yy - 2.0 * τyy0) ./ (Δt .* (4.0 * G + 3.0 * Kb))
                 ε̇zz = 1/2*(ε̇xx + ε̇yy)
-                ∇v   = ε̇xx + ε̇yy + ε̇zz
+                ∇v  = ε̇xx + ε̇yy + ε̇zz
 
                 # Deviatoric strain rates
                 ε̇xxd = ε̇xx - 1/3*∇v
                 ε̇yyd = ε̇yy - 1/3*∇v
                 ε̇zzd = ε̇zz - 1/3*∇v
 
+                # Make sure to make to make plastic strain deviatoric for the case of Vermeer's yield surface
+                if params.law == :MC_Vermeer1990
+                    ε̇xxd_pl = ε̇xxd_pl - 1/3*∇v_pl
+                    ε̇yyd_pl = ε̇yyd_pl - 1/3*∇v_pl
+                    ε̇zzd_pl = ε̇zzd_pl - 1/3*∇v_pl
+                end
+               
                 # Deviatoric stress and pressure
-                τxx = τxx0 + 2*ηn*(ε̇xxd - ε̇xx_pl + 1/3*∇v_pl) - 2*ηs*(ε̇yyd - ε̇yy_pl + 1/3*∇v_pl) - 2*ηs*(ε̇zzd - ε̇zz_pl + 1/3*∇v_pl)
-                τyy = τyy0 - 2*ηs*(ε̇xxd - ε̇xx_pl + 1/3*∇v_pl) + 2*ηn*(ε̇yyd - ε̇yy_pl + 1/3*∇v_pl) - 2*ηs*(ε̇zzd - ε̇zz_pl + 1/3*∇v_pl)
-                τzz = τzz0 - 2*ηs*(ε̇xxd - ε̇xx_pl + 1/3*∇v_pl) - 2*ηs*(ε̇yyd - ε̇yy_pl + 1/3*∇v_pl) + 2*ηn*(ε̇zzd - ε̇zz_pl + 1/3*∇v_pl)
-                τxy = τxy0 + 2*G*Δt*(ε̇xy  - ε̇xy_pl)
-                P   = P0   - ηb*(∇v- ∇v_pl) 
+                τxx = τxx0 + 2*G*Δt*(ε̇xxd - ε̇xxd_pl)
+                τyy = τyy0 + 2*G*Δt*(ε̇yyd - ε̇yyd_pl)
+                τzz = τzz0 + 2*G*Δt*(ε̇zzd - ε̇zzd_pl)
+                τxy = τxy0 + 2*G*Δt*(ε̇xy  - ε̇xy_pl )
+                P   = P0   -  Kb*Δt*(∇v   - ∇v_pl  )
+
+                # if iter==2 && it==30
+                #     @show dQdτzz, dQdP
+                #     @show (ε̇xxd_pl + ε̇yyd_pl + ε̇zzd_pl)
+                #     @show ∇v_pl
+                #     @show ε̇zzd_pl
+                #     @show (ε̇xxd_pl+ε̇yyd_pl)
+                # end
                 
                 # Yield criteria
                 τ_vec .= [τxx; τyy; τzz; τxy; P]
                 fc     = yield(τ_vec, λ̇, ϕ, c, ηvp, θt, law)
-                λ̇     += fc / (ηn + ηb) 
+                λ̇      += fc / ((Kb + G)*Δt) /5
                 if abs(fc)<1e-8 break end
-                if iter==niter error("Failed return mapping") end
+                # @show f, fc
+                if iter==niter error("Failed return mapping: f = $(f) --- fc = $(fc)") end
             end
         end
 
