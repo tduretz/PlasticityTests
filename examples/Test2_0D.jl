@@ -1,4 +1,4 @@
-using PlasticityTests, Plots
+using PlasticityTests, Plots, LinearAlgebra
 
 function main()
 
@@ -38,7 +38,7 @@ function main()
 
     load = zeros(nt)
 
-    for it=1:nt
+    for it=1:1#nt
 
         # Stress outside
         σ_o  = [σxx_o; σyy_o; σxy_o]
@@ -75,7 +75,7 @@ function main()
         σ_i    = [σxx_i; σyy_o; σxy_o]
         τ_i    = sqrt(0.25*(σ_i[1]-σ_i[2])^2 + σ_i[3]^2)
         f      = τ_i + 0.5*(σ_i[1]+σ_i[2])*sin(ϕ)
-        fc     = f
+        @show fc     = f
         if fc>0
             for iter=1:500
                 σ_i   .= [σxx_i; σyy_o; σxy_o]
@@ -117,7 +117,7 @@ function main()
 
         load[it] = σv/σh
 
-        if mod(it,50)==0
+        # if mod(it,50)==0
 
         p1 = plot(title="Test 1 Mohr circles", ylabel="τ", xlabel="σₙ", size=(300,300), aspect_ratio=1)
         p1 = plot!( MC_A... , color=:blue, label="Case A" )
@@ -129,7 +129,7 @@ function main()
 
         display(plot(p1, p2))
         sleep(0.1)
-        end
+        # end
     end
 end
 

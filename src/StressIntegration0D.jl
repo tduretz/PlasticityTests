@@ -289,7 +289,7 @@ function Vermeer1990_StressIntegration_vdev(σi; params=(
                 ε̇xy_pl  =  λ̇*dQdτxy/2
                 ε̇xxd_pl =  λ̇*dQdτxx 
                 ε̇yyd_pl =  λ̇*dQdτyy
-                # with this one: ezzp'!=0, ezzp=0, tzz!=0, ezz'=0\
+                # with this one: ezzp'!=0, ezzp=0, tzz!=0, ezz'=0
                 # ∇vp = ε̇xxp + ε̇yyp + ε̇zzp so ideally ε̇zzp = 0 such that ∇vp = -λ*dQdP
                 ε̇zzd_pl =  λ̇*dQdτzz
                 ∇v_pl  = -λ̇*dQdP

@@ -3,7 +3,7 @@ using Plots, LinearAlgebra, CSV
 # Vermeer (1990)
 # cohesion is 0!
 # ν is 0 !
-# Κ is 2G
+# Κ is 2/3G
 # σzzi = -p
 # Vermeer integration formulae: should include elasticity in the first steps!
 # Total OOP strain is 1/2*(Exx+Eyy)

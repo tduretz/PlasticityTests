@@ -133,7 +133,7 @@ function Vermeer1990_Test1_MatVec(σi; params=(
         τ    = sqrt(0.25*(σ[1]-σ[2])^2 + σ[3]^2)
         θ    = 0.5*acos((σ[1]-σ[2])/2/τ)
         
-        f      = τ + 0.5*(σ[1]+σ[2])*sin(ϕ) 
+        f    = τ + 0.5*(σ[1]+σ[2])*sin(ϕ) 
 
         # Stress integration
         𝐚    = G.*[ cos(2θ) + sin(ψ)
