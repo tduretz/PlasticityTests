@@ -55,7 +55,7 @@ function Main_VEP_1D_standalone(σi; params=(
     θ_A  = π/4 + 0.25*(ϕ + ψ)
     θ_C  = π/4 + 0.5*(ϕ)
     θ_R  = π/4 + 0.5*(ψ)
-    θ_SB = θ_A
+    θ_SB = θ_C
 
     # to Cartesian
     σxxi = 1/2*(σh + σv) +  1/2*(σh - σv)*cos(2*θ_SB)
@@ -100,7 +100,7 @@ function Main_VEP_1D_standalone(σi; params=(
     Kb         = 2/3*G*ones(Ncy+1);# Kb[1] = Kb[1]*2
     Pt         =  Pi*ones(Ncy+1) 
     Ptc        =  Pi*ones(Ncy+1) 
-    Pt0        =  Pi*ones(Ncy+1)
+    Pt0        =  Pi*ones(Ncy+1);   Pt0[Int64(Ncy/2)] *= 3.5
     τxx        =  τxxi*ones(Ncy+1); 
     τxy        =  τxyi*ones(Ncy+1)
     τyy        =  τyyi*ones(Ncy+1);  
@@ -187,7 +187,7 @@ function Main_VEP_1D_standalone(σi; params=(
 
     σrel = 0.99999
 
-    dt_red = 1#e4
+    dt_red = 0.9
 
     anim = @animate for it=1:Nt
         # History
@@ -275,14 +275,13 @@ function Main_VEP_1D_standalone(σi; params=(
                 @. ε̇xy_pl = λ̇rel*(τxy/2/τii)
                 @. ∇v_pl  = 3/2*sin(ψ)*λ̇rel
                 @. Ptc    = Pt0 - Kb*Δt*(∇v - ∇v_pl)
-                @. τxx    =  4/3 * ηve * (ε̇xxd + τxx0/(4/3*ηe) -  ε̇xx_pl) - 2/3 * ηve * (ε̇yyd                 -  ε̇yy_pl) - 2/3 * ηve * (ε̇zzd                 -  ε̇zz_pl)
-                @. τyy    = -2/3 * ηve * (ε̇xxd                 -  ε̇xx_pl) + 4/3 * ηve * (ε̇yyd + τyy0/(4/3*ηe) -  ε̇yy_pl) - 2/3 * ηve * (ε̇zzd                 -  ε̇zz_pl)
-                @. τzz    = -2/3 * ηve * (ε̇xxd                 -  ε̇xx_pl) - 2/3 * ηve * (ε̇yyd                 -  ε̇yy_pl) + 4/3 * ηve * (ε̇zzd + τzz0/(4/3*ηe) -  ε̇zz_pl)
+                @. τxx    =  4/3 * ηve * (ε̇xxd + 1/3*∇v + τxx0/(4/3*ηe) -  ε̇xx_pl) - 2/3 * ηve * (ε̇yyd + 1/3*∇v                 -  ε̇yy_pl) - 2/3 * ηve * (ε̇zzd + 1/3*∇v                 -  ε̇zz_pl)
+                @. τyy    = -2/3 * ηve * (ε̇xxd + 1/3*∇v                 -  ε̇xx_pl) + 4/3 * ηve * (ε̇yyd + 1/3*∇v + τyy0/(4/3*ηe) -  ε̇yy_pl) - 2/3 * ηve * (ε̇zzd + 1/3*∇v                 -  ε̇zz_pl)
+                @. τzz    = -2/3 * ηve * (ε̇xxd + 1/3*∇v                 -  ε̇xx_pl) - 2/3 * ηve * (ε̇yyd + 1/3*∇v                 -  ε̇yy_pl) + 4/3 * ηve * (ε̇zzd + 1/3*∇v + τzz0/(4/3*ηe) -  ε̇zz_pl)
                 @. τxy    =    2 * ηve * (ε̇xy  + τxy0/(2*ηe)   -  ε̇xy_pl) 
                 @. τii    = sqrt(τxy^2 + 0.5*(τyy^2 + τxx^2 + τzz^2))
                 @. Fc     = τii - Coh*cos(ϕ) - Ptc*sin(ϕ) - ηvp*λ̇rel
                 @. λ̇rel  += (F>=0) .* Fc / (ηvp + ηve + Kb*Δt*sin(ϕ)*sin(ψ))
-                @. λ̇rel[F<0] = 0.0
                 if maximum(Fc) < ϵ break end 
             end
 
