@@ -9,13 +9,13 @@ function main_Yury()
     Ly       = 1e+0
     eps0     = 1e-4
     # nondimentional
-    phi      = 40/180*pi
-    psi      = 10/180*pi
+    phi      = 40.0/180.0*π
+    psi      = 10.0/180.0*π
     sigh_G   = -1e-2
     # dimenzionally dependent
     Coh      = 0*G
     sigh     = sigh_G*G
-    sigv     = (1 + sin(phi))/(1 - sin(phi))*sigh/1.0
+    sigv     = (1.0 + sin(phi))/(1.0 - sin(phi))*sigh/1.0
     # Numerical parameters
     nt       = 150
     ny       = 10
@@ -105,19 +105,14 @@ function main_Yury()
         @. tauyy0  = tauyy
         @. tauzz0  = tauzz
         @. Pt0     = Pt
-        sigv_evol[it] = tauxx[end]*sin(theta_SB).^2 
-            +           tauyy[end]*cos(theta_SB).^2 
-            -           tauxy[end]*sin(2*theta_SB) - Pt[end]
-        sigh_evol[it] = tauxx[end]*cos(theta_SB).^2 
-            +           tauyy[end]*sin(theta_SB).^2 
-            +           tauxy[end]*sin(2*theta_SB) - Pt[end]
+        sigv_evol[it] = tauxx[end]*sin(theta_SB).^2 + tauyy[end]*cos(theta_SB).^2 - tauxy[end]*sin(2*theta_SB) - Pt[end]
+        sigh_evol[it] = tauxx[end]*cos(theta_SB).^2 + tauyy[end]*sin(theta_SB).^2 + tauxy[end]*sin(2*theta_SB) - Pt[end]
         for iter=1:niter
 
             errBC       = tauxx[end]*sin(theta_SB).^2 + tauyy[end]*cos(theta_SB).^2 - tauxy[end]*sin(2*theta_SB) - Pt[end] - sigv
             sigh_it     = tauxx[end]*cos(theta_SB).^2 + tauyy[end]*sin(theta_SB).^2 + tauxy[end]*sin(2*theta_SB) - Pt[end]
-            sigv        = sigv + 5e-1*(sigh - sigh_it)
+            sigv        += 5e-1*(sigh - sigh_it)
             Vy[end]     = Vy[end] - relVy*errBC
-
             Vx[1]       = -Vx[2]      + 2*VxS
             Vx[end]     = -Vx[end-1]  + 2*VxN
             Vy[1]       = - Vy[2]     + 2*VyS
@@ -126,7 +121,7 @@ function main_Yury()
             @. epszz    = 1/2*(epsxx + epsyy);
             @. divV     = epsxx + epsyy + epszz;
             # Stress
-            tau_new .= etave/etae*[tauxx0'; tauyy0'; tauzz0'] + 2*etave*Dev*[epsxx'; epsyy'; epszz' ]
+            tau_new .= etave./etae.*[tauxx0'; tauyy0'; tauzz0'] + 2.0.*etave.*Dev*[epsxx'; epsyy'; epszz' ]
             @. tauxx       = tau_new[1,:]
             @. tauyy       = tau_new[2,:]
             @. tauzz       = tau_new[3,:]
@@ -144,7 +139,7 @@ function main_Yury()
                 @. epsxy_pl = lamrel.*(tauxy/2/tauii)
                 @. divV_pl = 3/2*sin(psi)*lamrel
                 @. Ptc      = Pt0 - 2/3*G*dt*(divV - divV_pl)
-                tau_new .= etave/etae*[tauxx0'; tauyy0'; tauzz0'] +    2*etave*Dev*[epsxx' - epsxx_pl'; epsyy' - epsyy_pl'; epszz' - epszz_pl']
+                tau_new .= etave./etae.*[tauxx0'; tauyy0'; tauzz0'] +    2.0.*etave.*Dev*[epsxx' - epsxx_pl'; epsyy' - epsyy_pl'; epszz' - epszz_pl']
                 @. tauxx       = tau_new[1,:]
                 @. tauyy       = tau_new[2,:]
                 @. tauzz       = tau_new[3,:]
@@ -161,7 +156,7 @@ function main_Yury()
             # Residuals
             @. RPt          =  (- 2/3*G*dt*divV - (Pt - Pt0))
             @. RVx[2:end-1] =  ((tauxy[2:end] - tauxy[1:end-1])/dy )
-            @. RVy[2:end-1] =  ((tauyy[2:end] - tauyy[1:end-1])/dy  -            (Ptc[2:end] - Ptc[1:end-1])/dy)
+            @. RVy[2:end-1] =  ((tauyy[2:end] - tauyy[1:end-1])/dy - (Ptc[2:end] - Ptc[1:end-1])/dy)
             # Damp residuals
             @. dVxdtau      = RVx + (1.0 - thetaVx)*dVxdtau
             @. dVydtau      = RVy + (1.0 - thetaVy)*dVydtau
@@ -170,6 +165,9 @@ function main_Yury()
             @. Vx[2:end-1]  += deltatauV  * dVxdtau[2:end-1]
             @. Vy[2:end-1]  += deltatauV  * dVydtau[2:end-1]
             @. Pt           += deltatauPt * dPtdtau 
+
+            sigv = sigv_evol[it]
+            sigh = sigh_evol[it]
 
             if mod(iter, nout) == 0 || iter==1
                 @show maximum(abs.(RVx))
@@ -188,10 +186,12 @@ function main_Yury()
                 (isnan(errPt) || isnan(errVx) || isnan(errVx)) && error("NaNs") 
             end
         end
-        @. Pt     = Ptc
-        @. epsxyt = epsxyt + epsxy*dt
-        @. epsyyt = epsyyt + epsyy*dt
-        gamxy[it] = maximum(epsxyt)
+        @. Pt      = Ptc
+        @. epsxyt += epsxy*dt
+        @. epsyyt += epsyy*dt
+        gamxy[it]  = maximum(epsxyt)
+
+        @show epsxyt
 
         sigv_evol[it] = sigv
         sigh_evol[it] = sigh
@@ -212,12 +212,13 @@ function main_Yury()
         theta_i[it]  = 0.5*acos((sig_i[1]-sig_i[2])/2/tau_i)
 
         if mod(it,10)==0
+            p1 = plot(Vx, yc)
             p2 = plot(xlabel="strain", ylabel="sv/sh")
             p2 = plot!(gamxy,sigv_evol./sigh_evol)
             p3 = plot(xlabel="strain", ylabel="angle")
             p3 = plot!(gamxy[1:it], theta_o[1:it]*180/pi, label="out")
             p3 = plot!(gamxy[1:it], theta_i[1:it]*180/pi, label="in")
-            display(plot(p2, p3))
+            display(plot(p1, p2, p3))
         end
     end
 end
