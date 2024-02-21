@@ -2,26 +2,29 @@ using PlasticityTests, Plots, LinearAlgebra
 
 function main()
 
+    # Data
+    Test2 = ExtractDataTest2()
+
     # MC params
     ϕ  = 40.0*π/180.
     ψ  = 10.0*π/180.
-    G  = 10e6
+    G  = 1e6*100
     c  = 0.
 
     𝐃ᵉ  = [2G 0 0; 0 2G 0; 0 0 G]
 
     Δt  = 8
-    nt  = 200
+    nt  = 50
     γ̇xy = 0.0001
 
     θ_A = π/4 + 0.25*(ϕ + ψ)
     θ_C = π/4 + 0.5*ϕ
     θ_R = π/4 + 0.5*ψ
 
-    θ_SB = θ_C
+    θ_SB = θ_A
 
     σh = -100e3
-    σv = (1 + sin(ϕ)) / (1 - sin(ϕ)) * σh*0.99999
+    σv = (1 + sin(ϕ)) / (1 - sin(ϕ)) * σh
 
     # to Cartesian
     σxx_o = 1/2*(σh + σv) +  1/2*(σh - σv)*cos(2*θ_SB)
@@ -122,13 +125,17 @@ function main()
 
         load[it] = σv/σh
 
-        p1 = plot(title="Test 1 Mohr circles", ylabel="τ", xlabel="σₙ", size=(300,300), aspect_ratio=1)
-        p1 = plot!( MC_A... , color=:blue, label="Case A" )
-        p1 = plot!( MC_B...,  color=:green, label="Case B"  )
-        p1 = plot!( yield..., color=:red, label="Yield"  )
-        p2 = plot((1:it).*Δt.*γ̇xy, load[1:it])
-        display(plot(p1, p2))
-        sleep(0.1)
+        if mod(it,10)==0
+            p1 = plot(title="Test 1 Mohr circles", ylabel="τ", xlabel="σₙ", size=(300,300), aspect_ratio=1)
+            p1 = plot!( MC_A... , color=:blue, label="Case A" )
+            p1 = plot!( MC_B...,  color=:green, label="Case B"  )
+            p1 = plot!( yield..., color=:red, label="Yield"  )
+            p2 = plot((1:it).*Δt.*γ̇xy*100, load[1:it])
+            p2 = scatter!(Test2.StresRatioCoulomb.x, Test2.StresRatioCoulomb.y)
+            p2 = scatter!(Test2.StresRatioArthur.x, Test2.StresRatioArthur.y)
+            display(plot(p1, p2))
+            sleep(0.1)
+        end
     end
 end
 
