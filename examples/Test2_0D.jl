@@ -10,7 +10,7 @@ function main()
 
     𝐃ᵉ  = [2G 0 0; 0 2G 0; 0 0 G]
 
-    Δt  = 40
+    Δt  = 8
     nt  = 200
     γ̇xy = 0.0001
 
@@ -72,7 +72,7 @@ function main()
         # Back to Cartesian coordinates 
         σxx_o  = 1/2*(σh + σv) +  1/2*(σh - σv)*cos(2*θ_SB)
         σyy_o  = 1/2*(σh + σv) -  1/2*(σh - σv)*cos(2*θ_SB)
-        σxy_o  = 1/2*(σh - σv)*sin(2*θ_SB)
+        σxy_o  =                  1/2*(σh - σv)*sin(2*θ_SB)
 
         # Solve for σxx inside the shear band using yield condition
         σxx_i  = σxx_o

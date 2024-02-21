@@ -11,6 +11,7 @@ export @minmax
 
 include("./ReadDataFromVermeer1990.jl")
 export ExtractDataCase
+export ExtractDataTest2
 
 include("./PlasticityModels.jl")
 export MohrCoulombVermeer1990_vdev
@@ -27,6 +28,7 @@ export Vermeer1990_StressIntegration_tot
 
 include("./StressIntegration1D.jl")
 export Main_VEP_1D
+export Main_VEP_1D_tot
 
 
 end # module PlasticityTests

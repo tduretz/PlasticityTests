@@ -36,3 +36,18 @@ julia>  CaseA = ExtractDataCase("CaseA")
     )
     return Case
 end
+
+
+@views function ExtractDataTest2(  )
+    Test2 = (
+        StresRatioArthur = (
+            x = convert(Array, CSV.read("./data/Vermeer1990_Test2_StressRatio_Arthur.csv", DataFrame, header =[:x, :y])[:,1]),
+            y = convert(Array, CSV.read("./data/Vermeer1990_Test2_StressRatio_Arthur.csv", DataFrame, header =[:x, :y])[:,2]),
+        ),
+        StresRatioCoulomb = (
+            x = convert(Array, CSV.read("./data/Vermeer1990_Test2_StressRatio_Coulomb.csv", DataFrame, header =[:x, :y])[:,1]),
+            y = convert(Array, CSV.read("./data/Vermeer1990_Test2_StressRatio_Coulomb.csv", DataFrame, header =[:x, :y])[:,2]),
+        ),
+    )
+    return Test2
+end
