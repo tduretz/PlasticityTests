@@ -1,23 +1,7 @@
-using PlasticityTests, GeoParams, Plots, Printf, MathTeXEngine, LinearAlgebra, StaticArrays, Statistics
-import LinearAlgebra:norm
-# Makie.update_theme!(fonts = (regular = texfont(), bold = texfont(:bold), italic = texfont(:italic)))
 
-function PrincipalStress!(σ1, σ3, τxx, τyy, τzz, τxy, P)
-    for i in eachindex(τxy)
-        σ  = @SMatrix[-P[i]+τxx[i] τxy[i] 0.; τxy[i] -P[i]+τyy[i] 0.; 0. 0. -P[i]+τzz[i]]
-        v  = eigvecs(σ)
-        σp = eigvals(σ)
-        σ1.x[i] = v[1,1]
-        σ1.z[i] = v[2,1]
-        σ3.x[i] = v[1,3]
-        σ3.z[i] = v[2,3]
-        σ1.v[i] = σp[1]
-        σ3.v[i] = σp[3]
-    end
-end
-
-function Main_VEP_1D_standalone(σi; params=(
+function Main_VEP_1D_vdev(σi; params=(
     #---------------#
+    K   = 6.6666666667e6, # K = 3/2*Gv in Vermeer (1990)
     G   = 10e6,
     c   = 0.,
     ϕ   = 40/180*π,
@@ -26,13 +10,14 @@ function Main_VEP_1D_standalone(σi; params=(
     ηvp = 0.,
     γ̇xy = 0.00001,
     Δt  = 20,
-    nt  = 40,
+    nt  = 400,
     law = :MC_Vermeer1990,
+    oop = :Vermeer1990,
     pl  = true), 
     #---------------#
     visu     = true, 
     make_gif = false,  
-    Ncy      = 10# default parameter set
+    Ncy      = 10   # default parameter set
     #---------------#
     )
 
@@ -65,7 +50,9 @@ function Main_VEP_1D_standalone(σi; params=(
     Ẇ0         = nondimensionalize(5e-5Pa/s, CharDim)
     ε0         = nondimensionalize((params.γ̇xy)s^-1, CharDim)
     G          = nondimensionalize((params.G)Pa, CharDim)
+    Kb         = nondimensionalize((params.K)Pa, CharDim)
     Coh0       = nondimensionalize((params.c)Pa, CharDim)
+    Coh1       = nondimensionalize(         1Pa, CharDim)
     μs         = nondimensionalize(1e52Pa*s, CharDim)
     ϕ          = params.ϕ
     ψ          = params.ψ   
@@ -95,13 +82,14 @@ function Main_VEP_1D_standalone(σi; params=(
     τxy0       =  τxyi*ones(Ncy+1)
     τyy0       =  τyyi*ones(Ncy+1)
     τzz0       =  τzzi*ones(Ncy+1)
-    Coh        =  zeros((Ncy+1));    
+    Coh        =  ones((Ncy+1)).*Coh1; 
+    Coh[Int64(ceil(Ncy/2))] = Coh0  
     F          =  zeros((Ncy+1))
     Fc         =  zeros((Ncy+1))
     λ̇          =  zeros((Ncy+1))
     λ̇rel       =  zeros((Ncy+1))
     ispl       =  zeros(Int, (Ncy+1))
-    ηve        =  zeros((Ncy+1)); ηve        .= 1.0./(1.0/μs .+ 1.0/ηe)
+    ηve        =  zeros((Ncy+1)); ηve .= ηe
     ηvep       =  zeros((Ncy+1))
     εxy        =    zeros(Ncy+1)
     εyy        =    zeros(Ncy+1)
@@ -133,11 +121,16 @@ function Main_VEP_1D_standalone(σi; params=(
     ε̇xx_pl     =   zeros(Ncy+1)
     ε̇yy_pl     =   zeros(Ncy+1)
     ε̇zz_pl     =   zeros(Ncy+1)
+    ε̇xxd_pl    =   zeros(Ncy+1)
+    ε̇yyd_pl    =   zeros(Ncy+1)
+    ε̇zzd_pl    =   zeros(Ncy+1)
     ∇v         =   zeros(Ncy+1)
     ∇v_pl      =   zeros(Ncy+1)
 
     # Monitoring
-    probes    = (Ẇ0 = zeros(Nt), τxy0 = zeros(Nt), σyy0 = zeros(Nt), Vx0 = zeros(Nt), τii, θs3 = zeros(Nt), θs3_out = zeros(Nt), θs3_in = zeros(Nt), fric_in = zeros(Nt), fric_out = zeros(Nt), εyy = zeros(Nt), σxx=zeros(Nt), fric=zeros(Nt))
+    probes    = (Ẇ0 = zeros(Nt), τxy0 = zeros(Nt), σyy0 = zeros(Nt), Vx0 = zeros(Nt), τii, εyy = zeros(Nt), σxx=zeros(Nt), fric=zeros(Nt), θs3 = zeros(Nt), 
+                θs3_out = zeros(Nt), θs3_in = zeros(Nt), fric_in = zeros(Nt), fric_out = zeros(Nt), 
+                σxx_in = zeros(Nt), σxx_out = zeros(Nt), γxy_in = zeros(Nt), γxy_out = zeros(Nt))
     η        .= μs
    
     # BC
@@ -158,7 +151,8 @@ function Main_VEP_1D_standalone(σi; params=(
     rel   = 1e-2
     errPt, errVx, errVy = 0., 0., 0.
 
-    anim = @animate for it=1:Nt
+    # anim = @animate for it=1:Nt
+    for it=1:Nt
         # History
         @. τxy0  = τxy
         @. τxx0  = τxx
@@ -179,10 +173,10 @@ function Main_VEP_1D_standalone(σi; params=(
             if BC_Vy == :Dirichlet
                 Vy[end] = - Vy[end-1] + 2VyN
             elseif BC_Vy == :Neumann   
-                Vy[end] = (Pt0[end] .* Δy .* ηe[end] + Vy[end-1] .* ηe[end] .^ 2 + Vy[end-1] .* ηe[end] .* ηve[end] + Δy .* ηe[end] .* σyyi - Δy .* ηve[end] .* τyy0[end]) ./ (ηe[end] .* (ηe[end] + ηve[end]))
-                # Vy[end] = (Pt0[end] .* Δy .* ηe[end] + Vy[end-1] .* ηe[end] .^ 2 + Vy[end-1] .* ηe[end] .* ηve[end] - 0.666666666666667 * Δy .* ε̇xx_pl[end] .* ηe[end] .* ηve[end] + 1.33333333333333 * Δy .* ε̇yy_pl[end] .* ηe[end] .* ηve[end] - 0.666666666666667 * Δy .* ε̇zz_pl[end] .* ηe[end] .* ηve[end] + Δy .* ηe[end] .* σyyi - Δy .* ηve[end] .* τyy0[end]) ./ (ηe[end] .* (ηe[end] + ηve[end]))
+                Vy[end] = (3.0 * Kb .* Vy[end-1] .* Δt .* ηe[end] + 3.0 * Kb .* Δt .* Δy .* ηe[end] .* ∇v_pl[end] + 3.0 * Pt0[end] .* Δy .* ηe[end] + 4.0 * Vy[end-1] .* ηe[end] .* ηve[end] + 6.0 * Δy .* ε̇yy_pl[end] .* ηe[end] .* ηve[end] + 3.0 * Δy .* ηe[end] .* σyyi - 3.0 * Δy .* ηve[end] .* τyy0[end]) ./ (ηe[end] .* (3.0 * Kb .* Δt + 4.0 * ηve[end]))
             end
            
+            # Total strain rates
             @. ε̇xy  =  0.5*(Vx[2:end] - Vx[1:end-1])/Δy
             @. ε̇yy  =      (Vy[2:end] - Vy[1:end-1])/Δy # total
             @. ε̇zz  = 1/2*(ε̇xx + ε̇yy)
@@ -194,59 +188,48 @@ function Main_VEP_1D_standalone(σi; params=(
             @. ε̇zzd = ε̇zz - 1/3*∇v
 
             # Stress
-            @. τxx     =  4/3 * ηve * (ε̇xxd + 1/3*∇v + τxx0/(4/3*ηe)) - 2/3 * ηve * (ε̇yyd + 1/3*∇v)                 - 2/3 * ηve * (ε̇zzd + 1/3*∇v)
-            @. τyy     = -2/3 * ηve * (ε̇xxd + 1/3*∇v)                 + 4/3 * ηve * (ε̇yyd + 1/3*∇v + τyy0/(4/3*ηe)) - 2/3 * ηve * (ε̇zzd + 1/3*∇v)
-            @. τzz     = -2/3 * ηve * (ε̇xxd + 1/3*∇v)                 - 2/3 * ηve * (ε̇yyd + 1/3*∇v)                 + 4/3 * ηve * (ε̇zzd + 1/3*∇v + τzz0/(4/3*ηe))
-            @. τxy     =    2 * ηve * (ε̇xy  + τxy0/(2*ηe)) 
+            @. τxx     =  2*ηve * (ε̇xxd + τxx0/(2*ηe))
+            @. τyy     =  2*ηve * (ε̇yyd + τyy0/(2*ηe))
+            @. τzz     =  2*ηve * (ε̇zzd + τzz0/(2*ηe))
+            @. τxy     =  2*ηve * (ε̇xy  + τxy0/(2*ηe)) 
             @. τii     = sqrt(τxy^2 + 0.5*(τyy.^2 + τxx.^2 + τzz.^2))
-
-            # @. Pt     = Pt0 - 2/3*G*Δt*∇v
 
             # Plasticity
             @. F    = τii - Coh*cos(ϕ) - Pt*sin(ϕ)
             @. Ptc  = Pt
             @. ηvep = ηve
+            @. ispl = 0
             @. ispl[F>=0] = 1
-            @. ε̇iiᵉᶠᶠ   = sqrt( (ε̇xy + τxy0/2/ηe)^2 + 0.5*( (ε̇xxd + τxx0/(4/3*ηe))^2 + ((ε̇yyd + τyy0/(4/3*ηe))).^2 + ((ε̇zzd + τzz0/(4/3*ηe))).^2 ) ) 
-            for it=1:50
-                # @. λ̇      = F / (ηvp + ηve + Kb*Δt*sin(ϕ)*sin(ψ))
-                # @. λ̇rel   = (1.0-rel)*λ̇rel + rel*λ̇   
-                # @. λ̇rel   = λ̇   
+            @. ε̇iiᵉᶠᶠ   = sqrt( (ε̇xy + τxy0/2/ηe)^2 + 0.5*( (ε̇xxd + τxx0/(2*ηe))^2 + ((ε̇yyd + τyy0/(2*ηe))).^2 + ((ε̇zzd + τzz0/(2*ηe))).^2 ) ) 
+            for it=1:50  
                 @. ηvep   = (Coh*cos(ϕ) + Ptc*sin(ϕ) + ηvp*λ̇rel) / 2.0 / ε̇iiᵉᶠᶠ
-                @. ε̇xx_pl = λ̇rel*(τxx/2/τii)
-                @. ε̇yy_pl = λ̇rel*(τyy/2/τii)
-                @. ε̇zz_pl = λ̇rel*(τxx/2/τii + τyy/2/τii)/2   # dqdτzz*λ̇rel
-                @. ε̇xy_pl = λ̇rel*(τxy/2/τii)
-                @. ∇v_pl  = 3/2*sin(ψ)*λ̇rel
-                @. Ptc    = Pt0 - 2/3*G*Δt*(∇v - ∇v_pl)
-                @. τxx    =  4/3 * ηve * (ε̇xxd + τxx0/(4/3*ηe) -  ε̇xx_pl) - 2/3 * ηve * (ε̇yyd                 -  ε̇yy_pl) - 2/3 * ηve * (ε̇zzd                 -  ε̇zz_pl)
-                @. τyy    = -2/3 * ηve * (ε̇xxd                 -  ε̇xx_pl) + 4/3 * ηve * (ε̇yyd + τyy0/(4/3*ηe) -  ε̇yy_pl) - 2/3 * ηve * (ε̇zzd                 -  ε̇zz_pl)
-                @. τzz    = -2/3 * ηve * (ε̇xxd                 -  ε̇xx_pl) - 2/3 * ηve * (ε̇yyd                 -  ε̇yy_pl) + 4/3 * ηve * (ε̇zzd + τzz0/(4/3*ηe) -  ε̇zz_pl)
-                @. τxy    =    2 * ηve * (ε̇xy  + τxy0/(2*ηe)   -  ε̇xy_pl) 
+                @. ε̇xxd_pl = λ̇rel*(τxx/2/τii)
+                @. ε̇yyd_pl = λ̇rel*(τyy/2/τii)
+                @. ε̇zzd_pl = λ̇rel*(τzz/2/τii) 
+                @. ε̇xy_pl  = λ̇rel*(τxy/2/τii) 
+                @. ∇v_pl   = sin(ψ)*λ̇rel
+                if params.oop == :Vermeer1990
+                    @. ε̇zz_pl  = λ̇rel*(τxx/2/τii + τyy/2/τii)/2   # dqdτzz*λ̇rel
+                    @. ∇v_pl   = 3/2*sin(ψ)*λ̇rel
+                end
+                @. Ptc    = Pt0  - Kb*Δt*(∇v - ∇v_pl)
+                @. τxx    =  2*ηve * (ε̇xxd + τxx0/(2*ηe) -  ε̇xxd_pl)
+                @. τyy    =  2*ηve * (ε̇yyd + τyy0/(2*ηe) -  ε̇yyd_pl)
+                @. τzz    =  2*ηve * (ε̇zzd + τzz0/(2*ηe) -  ε̇zzd_pl)
+                @. τxy    =  2*ηve * (ε̇xy  + τxy0/(2*ηe) -  ε̇xy_pl) 
                 @. τii    = sqrt(τxy^2 + 0.5*(τyy^2 + τxx^2 + τzz^2))
                 @. Fc     = τii - Coh*cos(ϕ) - Ptc*sin(ϕ) - ηvp*λ̇rel
-                @. λ̇rel  += (F.>0) .* Fc / (ηvp + ηve + 2/3*G*Δt*sin(ϕ)*sin(ψ))
+                @. λ̇rel  += (F.>0) .* Fc / (ηvp + ηve + Kb*Δt*sin(ϕ)*sin(ψ))
                 if maximum(Fc) < ϵ break end 
             end
 
-            # # Check
-            # @. ε̇yy_el  =  (τyy - τyy0)/2/ηe
-            # @. ε̇yy_pl  =   τyy/τii/2*λ̇rel
-            # @. ε̇xy_el  =  (τxy - τxy0)/(2*ηe)
-            # @. ε̇xy_pl  =   τxy/τii/2*λ̇rel
-            # @. ∇v_el   =  -(Ptc - Pt0)/Kb/Δt
-            # @. ∇v_pl   =  λ̇rel*sin(ψ)
-            # @. ε̇xy_net = ε̇xy - ε̇xy_el - ε̇xy_pl
-            # @. ε̇yy_net = ε̇yy - ε̇yy_el - ε̇yy_pl
-            # @. ∇v_net  = ∇v  - ∇v_el  - ∇v_pl
-
             # PT time steps
             @. η_mm = min.(ηvep[1:end-1], ηvep[2:end]); 
-            @. ΔτV   = Δy^2/(η_mm)/2.1 /4
-            @. ΔτPt  = ηvep/Δy/G/Δt/3
+            @. ΔτV   = Δy^2/(η_mm)/2.1 /4 /10
+            @. ΔτPt  = ηvep/Δy/G/Δt/3/10
             
             # Residuals
-            @. RPt          =  (- 2/3*G*Δt*∇v - (Pt - Pt0))
+            @. RPt          =  (- Kb*Δt*∇v - (Pt - Pt0))
             @. RVx[2:end-1] =  ((τxy[2:end] - τxy[1:end-1])/Δy )
             @. RVy[2:end-1] =  ((τyy[2:end] - τyy[1:end-1])/Δy - (Ptc[2:end] - Ptc[1:end-1])/Δy)
             
@@ -266,8 +249,6 @@ function Main_VEP_1D_standalone(σi; params=(
                 errVy = norm(RVy)/sqrt(length(RVy))
                 σyyBC = τyy[end] - Ptc[end]
                 @printf("Iteration %05d --- Time step %4d --- Δt = %2.2e --- ΔtC = %2.2e --- εxy = %2.2e --- σyyBC = %2.7e --- max(F) = %2.2e --- max(Fc) = %2.2e \n", iter, it, ustrip(dimensionalize(Δt, s, CharDim)), ustrip(dimensionalize(Δy/2/maximum(Vx), s, CharDim)), ε0*it*Δt, ustrip(dimensionalize(σyyBC, Pa, CharDim)/1e3), maximum(ustrip.(dimensionalize(F, Pa, CharDim))), maximum(ustrip.(dimensionalize(Fc, Pa, CharDim))) )
-                # @printf("Exy_net = %2.2e --- Eyy_net = %2.2e --- Div net = %2.2e\n", mean(abs.(ε̇xy_net)), mean(abs.(ε̇yy_net)), mean(abs.(∇v_net)) )
-                # @printf("Exy_el  = %2.2e --- Exy_pl  = %2.2e --- Exy net = %2.2e\n", mean(abs.(ε̇xy_el)), mean(abs.(ε̇xy_pl)), mean(abs.(ε̇xy_net)) )
                 @printf("fPt = %2.4e\n", errPt)
                 @printf("fVx = %2.4e\n", errVx)
                 @printf("fVy = %2.4e\n", errVy)
@@ -281,30 +262,36 @@ function Main_VEP_1D_standalone(σi; params=(
         @. εyy += ε̇yy*Δt 
 
         # Show array infos
-        # @minmax(Pt)
-        # @minmax(τxx)
-        # @minmax(τyy)
-        # @minmax(τzz)
-        # @minmax(τxy)
+        @minmax(Pt)
+        @minmax(τxx)
+        @minmax(τyy)
+        @minmax(τzz)
+        @minmax(τxy)
 
         # if (errPt > ϵ || errVx > ϵ || errVx > ϵ) error("non converged") end
         PrincipalStress!(σ1, σ3, τxx, τyy, τzz, τxy, Pt)
 
-        _, iA = findmin(σ3.v) # out
-        _, iB = findmax(σ1.v) # in
+        # Probe model state
+        _, iA = findmin(σ3.v)
+        _, iB = findmax(σ1.v)
 
         probes.Ẇ0[it]       = τxy[end]*ε̇xy[end]
         probes.τxy0[it]     = τxy[end]
         probes.Vx0[it]      = 0.5*(Vx[end] + Vx[end-1])
         probes.σyy0[it]     = τyy[end] - Pt[end]
-        probes.θs3_out[it]  = atand.(σ3.z[iA] ./ σ3.x[iA])
-        probes.θs3_in[it]   = atand.(σ3.z[iB] ./ σ3.x[iB])
+        probes.θs3_out[it]  = atand(σ3.z[iA] ./ σ3.x[iA])
+        probes.θs3_in[it]   = atand(σ3.z[iB] ./ σ3.x[iB])
         probes.fric_out[it] = -τxy[iA]./(τyy[iA] .- Pt[iA])
         probes.fric_in[it]  = -τxy[iB]./(τyy[iB] .- Pt[iB])
         probes.εyy[it]      = εyy[iB]
-        probes.σxx[it]      = τxx[iB] - Pt[iB]
         probes.fric[it]     = -τxy[iB]./(τyy[iB] .- Pt[iB])
         probes.θs3[it]      = atand.(σ3.z[iB] ./ σ3.x[iB])
+        probes.σxx[it]      = ustrip(dimensionalize(τxx[iB]-Pt[iB], Pa, CharDim))
+        probes.σxx_out[it]  = ustrip(dimensionalize(τxx[iA]-Pt[iA], Pa, CharDim))
+        probes.σxx_in[it]   = ustrip(dimensionalize(τxx[iB]-Pt[iB], Pa, CharDim))
+        probes.γxy_out[it]  = εxy[iA]
+        probes.γxy_in[it]   = εxy[iB] 
+        
         
         # Visualisation
         if visu==true && (mod(it, nout_viz)==0 || it==1 || it==Nt)
@@ -328,7 +315,7 @@ function Main_VEP_1D_standalone(σi; params=(
 
             p1 = plot( title = "γxy [%]", xlabel = "γxy [%]", ylabel = "y [-]", legend=:none )
             p1 = plot!(ustrip.(2 .* εxy*100),           ustrip.(dimensionalize(yv, m, CharDim)./1e3), label="γxy" )
-            # p1=plot!(ustrip.(2 .* εxy[ispl.==1]*100), ustrip.(dimensionalize(yv[ispl.==1], m, CharDim)./1e3), linewidth=5 )
+            p1 = scatter!(ustrip.(2 .* εxy[ispl.==1]*100), ustrip.(dimensionalize(yv[ispl.==1], m, CharDim)./1e3), linewidth=5 )
 
             # p2=plot(title = "Velocity", xlabel = L"$Vx$ [cm/y]", ylabel = L"$y$ [-]" )
             # p2=plot!(ustrip.(dimensionalize(Vx, m/s, CharDim)), ustrip.(dimensionalize(yc, m, CharDim)./1e3) )
@@ -352,9 +339,13 @@ function Main_VEP_1D_standalone(σi; params=(
             
         end
     end
-
     if make_gif gif(anim, "figures/Test1_MohrCircles_1D.gif", fps = 15) end
-    return (γxy=(1:Nt)*ε0*Δt*100, εyy=probes.εyy.*100, app_fric=probes.fric, σxx=.-probes.σxx/1e3, θ=probes.θs3)
+    return (γxy=(0:Nt-1)*ε0*Δt*100, εyy=probes.εyy.*100, app_fric=probes.fric, σxx=.-probes.σxx./1e3, θ=probes.θs3)
 end
 
-@show Main_VEP_1D_standalone((xx = -400e3, yy=-100e3))
+#  # Case B
+#  σi       = (xx = -400e3, yy=-100e3)
+
+# Main_VEP_1D_vdev(σi; visu=true)
+
+# # Main_VEP_1D_tot(σi; visu=true)

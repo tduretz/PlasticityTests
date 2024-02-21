@@ -26,7 +26,7 @@ function main()
         pl  = true) # default parameter set
     σi       = (xx = -400e3, yy=-100e3)
     CaseB_0D_00 = Vermeer1990_StressIntegration_vdev(σi; params)
-    CaseB_1D_00 = Main_VEP_1D(σi; params, visu=false)
+    CaseB_1D_00 = Main_VEP_1D_vdev(σi; params, visu=false)
 
     # Case B - 10ᵒ
     params=(
@@ -45,7 +45,7 @@ function main()
         pl  = true) # default parameter set
     σi       = (xx = -400e3, yy=-100e3)
     CaseB_0D_10 = Vermeer1990_StressIntegration_vdev(σi; params)
-    CaseB_1D_10 = Main_VEP_1D(σi; params, visu=false)
+    CaseB_1D_10 = Main_VEP_1D_vdev(σi; params, visu=false)
     
     # Case B - 20ᵒ
     params=(
@@ -64,7 +64,7 @@ function main()
         pl  = true) # default parameter set
     σi       = (xx = -400e3, yy=-100e3)
     CaseB_0D_20 = Vermeer1990_StressIntegration_vdev(σi; params)
-    CaseB_1D_20 = Main_VEP_1D(σi; params, visu=false)
+    CaseB_1D_20 = Main_VEP_1D_vdev(σi; params, visu=false)
 
     #------------------------------#
     # Panel (1,1) - Stress ratio

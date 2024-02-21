@@ -23,3 +23,18 @@ macro minmax(x)
         print(info)
     end
 end
+
+
+function PrincipalStress!(σ1, σ3, τxx, τyy, τzz, τxy, P)
+    for i in eachindex(τxy)
+        σ  = @SMatrix[-P[i]+τxx[i] τxy[i] 0.; τxy[i] -P[i]+τyy[i] 0.; 0. 0. -P[i]+τzz[i]]
+        v  = eigvecs(σ)
+        σp = eigvals(σ)
+        σ1.x[i] = v[1,1]
+        σ1.z[i] = v[2,1]
+        σ3.x[i] = v[1,3]
+        σ3.z[i] = v[2,3]
+        σ1.v[i] = σp[1]
+        σ3.v[i] = σp[3]
+    end
+end

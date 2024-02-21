@@ -7,7 +7,7 @@ import ForwardDiff
 import Statistics:mean
 
 include("Helpers.jl")
-export @minmax
+export @minmax, PrincipalStress!
 
 include("./ReadDataFromVermeer1990.jl")
 export ExtractDataCase
@@ -22,12 +22,16 @@ include("./StressIntegration0D_Vermeer1990.jl")
 export Vermeer1990_Test1_Components
 export Vermeer1990_Test1_MatVec
 
-include("./StressIntegration0D.jl")
+include("./StressIntegration0D_VolDev.jl")
 export Vermeer1990_StressIntegration_vdev
+
+include("./StressIntegration0D_TotalStress.jl")
 export Vermeer1990_StressIntegration_tot
 
-include("./StressIntegration1D.jl")
-export Main_VEP_1D
+include("./StressIntegration1D_VolDev.jl")
+export Main_VEP_1D_vdev
+
+include("./StressIntegration1D_TotalStress.jl")
 export Main_VEP_1D_tot
 
 

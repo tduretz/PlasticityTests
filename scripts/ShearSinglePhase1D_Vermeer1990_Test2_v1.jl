@@ -63,9 +63,9 @@ function Main_VEP_1D_standalone(σi; params=(
     σxyi = 1/2*(σh - σv)*sin(2*θ_SB)
 
     if σi.xx>σi.yy
-        Vemeer90 = ExtractDataCase("CaseA")
+        Vermeer1990 = ExtractDataCase("CaseA")
     else
-        Vemeer90 = ExtractDataCase("CaseB")
+        Vermeer1990 = ExtractDataCase("CaseB")
     end
 
     # Physical parameters
