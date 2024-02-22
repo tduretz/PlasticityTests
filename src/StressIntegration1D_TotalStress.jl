@@ -330,8 +330,8 @@ function Main_VEP_1D_tot(σi; params=(
 
             p3 = plot(title = "Stress orientation", ylabel = "θ σ3 [ᵒ]", xlabel = "γxy BC [%]", xlims=(0,8), foreground_color_legend = nothing, background_color_legend = nothing  )
             p3 = scatter!(Vermeer1990.θ.x, Vermeer1990.θ.y, label="Vermeer (1990)", legend=:topright)
-            p3 = plot!((1:it)*ε0*Δt*100, ustrip.(probes.θs3_out[1:it]), label="out", color=:blue  )
-            p3 = plot!((1:it)*ε0*Δt*100, ustrip.(probes.θs3_in[1:it]),  label="in" , color=:green )
+            p3 = plot!((1:it)*ε0*Δt*100, probes.θs3_out[1:it], label="out", color=:blue  )
+            p3 = plot!((1:it)*ε0*Δt*100, probes.θs3_in[1:it],  label="in" , color=:green )
 
             p4 = plot( xlabel = "γxy BC [%]", ylabel = "-σxy/σyy", foreground_color_legend = nothing, background_color_legend = nothing )
             scatter!(Vermeer1990.Friction.x, Vermeer1990.Friction.y, label="Vermeer (1990)", legend=:bottomright)
