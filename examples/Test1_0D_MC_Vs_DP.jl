@@ -242,7 +242,7 @@ function main()
         ηvp = 0.,
         γ̇xy = 0.00001,
         Δt  = 20,
-        nt  = 200,
+        nt  = 10,
         law = :MC_deBorst90,
         oop = :Vermeer1990,
         pl  = true)

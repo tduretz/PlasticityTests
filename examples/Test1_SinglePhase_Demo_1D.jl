@@ -5,9 +5,13 @@ function main()
 
     # Case B
     σi       = (xx = -400e3, yy=-100e3)
-    # Main_VEP_1D_vdev(σi; visu=true)
-
-    Main_VEP_1D_tot(σi; visu=true)
+    @time Main_VEP_1D_vdev(σi; visu=true)
+    
+    # @time Main_VEP_1D_vdev_GP(σi; visu=true)
+    
+    # @time Main_VEP_1D_tot_GP(σi; visu=true)
+    
+    # @time Main_VEP_1D_tot(σi; visu=true)
 
 end
 

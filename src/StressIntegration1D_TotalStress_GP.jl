@@ -1,4 +1,4 @@
-function Main_VEP_1D_tot(σi; params=(
+function Main_VEP_1D_tot_GP(σi; params=(
     #---------------#
     K   = 6.6666666667e6, # K = 3/2*Gv in Vermeer (1990)
     G   = 10e6,
@@ -24,12 +24,13 @@ function Main_VEP_1D_tot(σi; params=(
     if visu==false 
         make_gif = false 
     end
-
-    sc = (σ = params.G, L = 1.0, t = 1.0/params.γ̇xy)
+    
+    # Unit system
+    CharDim    = SI_units(length=1000m, temperature=1000C, stress=1e7Pa, viscosity=1e20Pas)
 
     # Load digitised data from test 1 of Vermeer (1990)
-    σxxi     = σi.xx/sc.σ # Courbe A - Vermeer
-    σyyi     = σi.yy/sc.σ # Courbe A - Vermeer
+    σxxi     = nondimensionalize( (σi.xx)Pa, CharDim) # Courbe A - Vermeer
+    σyyi     = nondimensionalize( (σi.yy)Pa, CharDim) # Courbe A - Vermeer
     if σi.xx>σi.xx
         Vermeer1990 = ExtractDataCase("CaseA")
     else
@@ -45,25 +46,24 @@ function Main_VEP_1D_tot(σi; params=(
     τxyi       = 0.0
     σxyi       = 0.0
  
-    # Dimensionally dependent
-    Ly         = 2e4/sc.L
-    Ẇ0         = 5e-5/(sc.σ/sc.t)
-    ε0         = params.γ̇xy/(1.0/sc.t)
-    G          = params.G/sc.σ
-    Kb         = params.K/sc.σ
-    Coh0       = params.c/sc.σ
-    Coh1       =      1.0/sc.σ
-    μs         = 1e52/(sc.σ*sc.t)
-    ηvp        = params.ηvp/(sc.σ*sc.t)
+    Ly         = nondimensionalize(2e4m, CharDim)
+    Ẇ0         = nondimensionalize(5e-5Pa/s, CharDim)
+    ε0         = nondimensionalize((params.γ̇xy)s^-1, CharDim)
+    G          = nondimensionalize((params.G)Pa, CharDim)
+    Kb         = nondimensionalize((params.K)Pa, CharDim)
+    Coh0       = nondimensionalize((params.c)Pa, CharDim)
+    Coh1       = nondimensionalize(         1Pa, CharDim)
+    μs         = nondimensionalize(1e52Pa*s, CharDim)
     ϕ          = params.ϕ
-    ψ          = params.ψ 
+    ψ          = params.ψ   
+    ηvp        = nondimensionalize((params.ηvp)Pa*s, CharDim)     # 7.5e7
 
     # Numerical parameters
     Nt         = params.nt-1
     Δy         = Ly/Ncy
     yc         = LinRange(-Ly/2-Δy/2, Ly/2+Δy/2, Ncy+2)
     yv         = LinRange(-Ly/2,      Ly/2,      Ncy+1)
-    Δt         = params.Δt/sc.t
+    Δt         = nondimensionalize((params.Δt)s, CharDim)
     ηe         = G*Δt
     nout_viz   = 10
     if make_gif 
@@ -264,7 +264,7 @@ function Main_VEP_1D_tot(σi; params=(
                 errVx = norm(RVx)/sqrt(length(RVx))
                 errVy = norm(RVy)/sqrt(length(RVy))
                 σyyBC = τyy[end] - Ptc[end]
-                @printf("Iteration %05d --- Time step %4d --- σyyBC = %2.7e --- max(F) = %2.2e --- max(Fc) = %2.2e \n", iter, it, σyyBC.*sc.σ/1e3, maximum(F.*sc.σ), maximum(F.*sc.σ) )
+                @printf("Iteration %05d --- Time step %4d --- Δt = %2.2e --- ΔtC = %2.2e --- εxy = %2.2e --- σyyBC = %2.7e --- max(F) = %2.2e --- max(Fc) = %2.2e \n", iter, it, ustrip(dimensionalize(Δt, s, CharDim)), ustrip(dimensionalize(Δy/2/maximum(Vx), s, CharDim)), ε0*it*Δt, ustrip(dimensionalize(σyyBC, Pa, CharDim)/1e3), maximum(ustrip.(dimensionalize(F, Pa, CharDim))), maximum(ustrip.(dimensionalize(Fc, Pa, CharDim))) )
                 @printf("fVx = %2.4e\n", errVx)
                 @printf("fVy = %2.4e\n", errVy)
                 (errVx < ϵ && errVy < ϵ) && break 
@@ -300,7 +300,7 @@ function Main_VEP_1D_tot(σi; params=(
         probes.εyy[it]      = εyy[iB]
         probes.fric[it]     = -τxy[iB]./(τyy[iB] .- Pt[iB])
         probes.θs3[it]      = atand.(σ3.z[iB] ./ σ3.x[iB])
-        probes.σxx[it]      = (τxx[iB]-Pt[iB])*sc.σ
+        probes.σxx[it]      = ustrip(dimensionalize(τxx[iB]-Pt[iB], Pa, CharDim))
         
         # Visualisation
         if visu==true && (mod(it, nout_viz)==0 || it==1 || it==Nt)
@@ -309,19 +309,25 @@ function Main_VEP_1D_tot(σi; params=(
             σMC = LinRange(-500, 0, 100 ) .*1e3
             τMC = -σMC.*tan(ϕ) 
 
-            PA    = ((σ1.v[iA] + σ3.v[iA])/2)*sc.σ
-            τA    = ((σ1.v[iA] - σ3.v[iA])/2)*sc.σ
-            τB    = ((σ1.v[iB] - σ3.v[iB])/2)*sc.σ
-            PB    = ((σ1.v[iB] + σ3.v[iB])/2)*sc.σ
+            PA    = dimensionalize( (σ1.v[iA] + σ3.v[iA])/2, Pa, CharDim)
+            τA    = dimensionalize( (σ1.v[iA] - σ3.v[iA])/2, Pa, CharDim)
+            τB    = dimensionalize( (σ1.v[iB] - σ3.v[iB])/2, Pa, CharDim)
+            PB    = dimensionalize( (σ1.v[iB] + σ3.v[iB])/2, Pa, CharDim)
             
             yield = (x = σMC./1e3, y = τMC./1e3)
             MC_A  = (x = (τA.*cos.(θ) .+ PA)./1e3, y = (τA.*sin.(θ))./1e3) 
             MC_B  = (x = (τB.*cos.(θ) .+ PB)./1e3, y = (τB.*sin.(θ))./1e3)
+    
+            # p1=plot( title = "Total pressure", xlabel = L"$P$ [kPa]", ylabel = L"$y$ [km]" )
+            # p1=plot!(ustrip.(dimensionalize(τyy.-Pt, Pa, CharDim))/1e3, ustrip.(dimensionalize(yv, m, CharDim)./1e3), label="σyy" )
+            # p1=plot!(ustrip.(dimensionalize(τyy[ispl.==1].-Pt[ispl.==1], Pa, CharDim))/1e3, ustrip.(dimensionalize(yv[ispl.==1], m, CharDim)./1e3), linewidth=5 )
 
             p1 = plot( title = "γxy [%]", xlabel = "γxy [%]", ylabel = "y [-]", legend=:none )
-            p1 = plot!(2 .* εxy*100,          yv.*sc.L, label="γxy" )
-            p1 = scatter!(2 .* εxy[ispl.==1]*100, yv[ispl.==1].*sc.L, linewidth=5 )
+            p1 = plot!(ustrip.(2 .* εxy*100),           ustrip.(dimensionalize(yv, m, CharDim)./1e3), label="γxy" )
+            p1 = scatter!(ustrip.(2 .* εxy[ispl.==1]*100), ustrip.(dimensionalize(yv[ispl.==1], m, CharDim)./1e3), linewidth=5 )
 
+            # p2=plot(title = "Velocity", xlabel = L"$Vx$ [cm/y]", ylabel = L"$y$ [-]" )
+            # p2=plot!(ustrip.(dimensionalize(Vx, m/s, CharDim)), ustrip.(dimensionalize(yc, m, CharDim)./1e3) )
             p2 = plot(title="Mohr circles", ylabel="τ [kPa]", xlabel="σₙ [kPa]", size=(300,300), aspect_ratio=1, xlim=(-500,0), ylim=(0,400))
             p2 = plot!( MC_A... , color=:blue, label="out" )
             p2 = plot!( MC_B...,  color=:green, label="in"  )

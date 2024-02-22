@@ -31,8 +31,13 @@ export Vermeer1990_StressIntegration_tot
 include("./StressIntegration1D_VolDev.jl")
 export Main_VEP_1D_vdev
 
+include("./StressIntegration1D_VolDev_GP.jl")
+export Main_VEP_1D_vdev_GP
+
 include("./StressIntegration1D_TotalStress.jl")
 export Main_VEP_1D_tot
 
+include("./StressIntegration1D_TotalStress_GP.jl")
+export Main_VEP_1D_tot_GP
 
 end # module PlasticityTests

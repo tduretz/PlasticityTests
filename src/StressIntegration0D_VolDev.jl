@@ -136,7 +136,7 @@ function Vermeer1990_StressIntegration_vdev(σi; params=(
              
             for iter=1:niter
 
-                # Plastic total strain rates
+                # Plastic total strain rates: not deviatoric in case of params.law == :MC_Vermeer1990
                 ε̇xy_pl  =  λ̇*dQdτxy/2
                 ε̇xxd_pl =  λ̇*dQdτxx 
                 ε̇yyd_pl =  λ̇*dQdτyy
