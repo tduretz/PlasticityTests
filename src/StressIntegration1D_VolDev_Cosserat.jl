@@ -10,8 +10,8 @@ function Main_VEP_1D_vdev_coss(σi; params=(
     θt  = 25/180*π,
     ηvp = 0.,
     γ̇xy = 0.00001,
-    Δt  = 20,
-    nt  = 400,
+    Δt  = 20/1,
+    nt  = 400*1,
     law = :MC_Vermeer1990,
     oop = :Vermeer1990,
     pl  = true), 
@@ -23,7 +23,7 @@ function Main_VEP_1D_vdev_coss(σi; params=(
     )
     sc = (σ = params.G, L = 1.0, t = 1.0/params.γ̇xy)
 
-    coss  = true
+    coss  = false
 
     # Visualisation is important!
     if visu==false 
@@ -82,13 +82,11 @@ function Main_VEP_1D_vdev_coss(σi; params=(
     τyy        =  τyyi*ones(Ncy+1)    
     τzz        =  τzzi*ones(Ncy+1) 
     τxy        =  τxyi*ones(Ncy+1)
-    σxy        =  zeros(Ncy) # will need averaging
-    σyx        =  zeros(Ncy)
     τxx0       =  τxxi*ones(Ncy+1)
     τyy0       =  τyyi*ones(Ncy+1)
     τzz0       =  τzzi*ones(Ncy+1)
     τxy0       =  τxyi*ones(Ncy+1)
-    Coh        =  ones((Ncy+1)).*Coh1; 
+    Coh        =  ones((Ncy+1)).*Coh1/650; 
     Coh[Int64(ceil(Ncy/2))] = Coh0  
     F          =  zeros((Ncy+1))
     Fc         =  zeros((Ncy+1))
@@ -98,7 +96,6 @@ function Main_VEP_1D_vdev_coss(σi; params=(
     ηve        =  zeros((Ncy+1)); ηve .= ηe
     ηvep       =  zeros((Ncy+1))
     εxy        =    zeros(Ncy+1)
-    # ẇz         =    zeros(Ncy+1)
     Ẇz         =    zeros(Ncy+1)
     κ̇yz        =    zeros(Ncy+1)
     εyy        =    zeros(Ncy+1)
@@ -263,7 +260,7 @@ function Main_VEP_1D_vdev_coss(σi; params=(
           
             # PT time steps
             @. η_mm  = min.(ηve[1:end-1], ηve[2:end]); 
-            @. ΔτV   = Δy^2/(η_mm)/2.1 /4 
+            @. ΔτV   = Δy^2/(η_mm)/2.1 /4
             @. ΔτPt  = 3/2
             @. Δτω̇z  = Δy/η_mm/4.1/4000
             
@@ -319,6 +316,8 @@ function Main_VEP_1D_vdev_coss(σi; params=(
         # Probe model state
         _, iA = findmax(Pt)
         _, iB = findmin(Pt)
+
+        @show atand(σ3.z[iA] ./ σ3.x[iA])
 
         probes.Ẇ0[it]       = τxy[end]*ε̇xy[end]
         probes.τxy0[it]     = τxy[end]
