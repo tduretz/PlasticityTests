@@ -1,40 +1,46 @@
 using PlasticityTests,Plots 
 
 function Vermeer3_ana()
-    degrad = π / 180
-    G = 10e6
-    phi = 40 * degrad
-    psi = 10 * degrad
-    c = 0
-    gamma_tot = 0.08
-    nu = 0.1
-    # IC
-    sxx = -400e3
-    syy = -100e3
-    sxy = 0
-    # CL
-    dt = 1
-    gamma_dot_xy = 1e-4
-    nstep = Int64(gamma_tot / (gamma_dot_xy * dt))
+
+    # Vermeer (1990)
+    Gv = 10e6
+    Kv = 2/3*Gv
+
+    params=(
+        K   = Kv,
+        G   = Gv,
+        c   = 0.0,
+        ϕ   = 40/180*π,
+        ψ   = 10/180*π,
+        θt  = 25/180*π,
+        ηvp = 0.,
+        γ̇xy = 0.00001,
+        Δt  = 20,
+        nt  = 400,
+        law = :DruckerPrager,
+        oop = :Vermeer1990,
+        pl  = true) # default parameter set
+
+    σi       = (xx = -400e3, yy=-100e3, xy=0.0)    
     shearband_thickness = 1.
     model_thickness     = 10.
     factor = model_thickness/shearband_thickness
-    sigma_out, sigma_in, theta_out,theta,  epsilon_out, epsilon_in = Vermeer3_ana_llp2013(phi, psi, nu, sxx, syy, sxy, G, nstep, gamma_dot_xy,factor)
-# Plotting
-    
-p1=plot(epsilon_out[3, :], -sigma_in[3, :] ./ sigma_in[2, :], label="sxy/syy", color=:red)
-p1=plot!(epsilon_out[3, :], -sigma_out[3, :] ./ sigma_out[2, :], label="sxy/syy", color=:blue)
+    LLP    = Vermeer3_ana_llp2013(σi, params, factor)
+  
+    # Plotting 
+    p1=plot( LLP.ε_out[3, :], -LLP.σ_in[3, :] ./ LLP.σ_in[2, :], label="sxy/syy_in", color=:red)
+    p1=plot!(LLP.ε_out[3, :], -LLP.σ_out[3, :] ./ LLP.σ_out[2, :], label="sxy/syy_out", color=:blue)
 
-p2=plot(epsilon_out[3, :], theta, label="theta", color=:red)
-p2=plot!(epsilon_out[3, :], theta_out, label="theta", color=:blue)
+    p2=plot( LLP.ε_out[3, :], LLP.θ_in, label="θ_in", color=:red)
+    p2=plot!(LLP.ε_out[3, :], LLP.θ_out, label="θ_out", color=:blue)
 
-p3=plot(epsilon_out[3, :], epsilon_in[2, :], label="epsilon yy", color=:red)
-p3=plot!(epsilon_out[3, :], epsilon_out[2, :], label="epsilon yy", color=:blue)
+    p3=plot( LLP.ε_out[3, :], LLP.ε_in[2, :], label="eyy_in", color=:red)
+    p3=plot!(LLP.ε_out[3, :], LLP.ε_out[2, :], label="eyy_out", color=:blue)
 
-p4=plot(epsilon_out[3, :], -sigma_in[1, :], label="sxx", color=:red)
-p4=plot!(epsilon_out[3, :], -sigma_out[1, :], label="sxx", color=:blue)
+    p4=plot( LLP.ε_out[3, :], -LLP.σ_in[1, :], label="sxx_in", color=:red)
+    p4=plot!(LLP.ε_out[3, :], -LLP.σ_out[1, :], label="sxx_out", color=:blue)
 
-display(plot(p1,p2,p3,p4))
+    display(plot(p1,p2,p3,p4))
 end
 
 

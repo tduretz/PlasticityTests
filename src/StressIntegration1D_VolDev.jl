@@ -52,7 +52,7 @@ function Main_VEP_1D_vdev(σi; params=(
     G          = params.G/sc.σ
     Kb         = params.K/sc.σ
     Coh0       = params.c/sc.σ
-    Coh1       =      1.0/sc.σ
+    Coh1       =  1.0/100/sc.σ
     μs         = 1e52/(sc.σ*sc.t)
     ηvp        = params.ηvp/(sc.σ*sc.t)
     ϕ          = params.ϕ
@@ -130,7 +130,7 @@ function Main_VEP_1D_vdev(σi; params=(
     # Monitoring
     probes    = (Ẇ0 = zeros(Nt), τxy0 = zeros(Nt), σyy0 = zeros(Nt), Vx0 = zeros(Nt), τii, εyy = zeros(Nt), σxx=zeros(Nt), fric=zeros(Nt), θs3 = zeros(Nt), 
                 θs3_out = zeros(Nt), θs3_in = zeros(Nt), fric_in = zeros(Nt), fric_out = zeros(Nt), 
-                σxx_in = zeros(Nt), σxx_out = zeros(Nt), γxy_in = zeros(Nt), γxy_out = zeros(Nt))
+                σxx_in = zeros(Nt), σxx_out = zeros(Nt), εyy_in = zeros(Nt), εyy_out = zeros(Nt), γxy_in = zeros(Nt), γxy_out = zeros(Nt))
     η        .= μs
    
     # BC
@@ -226,7 +226,7 @@ function Main_VEP_1D_vdev(σi; params=(
             # PT time steps
             @. η_mm = min.(ηvep[1:end-1], ηvep[2:end]); 
             @. ΔτV   = Δy^2/(η_mm)/2.1 /4 /10
-            @. ΔτPt  = ηvep/Δy/G/Δt/3/10
+            @. ΔτPt  = 3/2
             
             # Residuals
             @. RPt          =  (- Kb*Δt*∇v - (Pt - Pt0))
@@ -252,7 +252,7 @@ function Main_VEP_1D_vdev(σi; params=(
                 @printf("fPt = %2.4e\n", errPt)
                 @printf("fVx = %2.4e\n", errVx)
                 @printf("fVy = %2.4e\n", errVy)
-                (errVx < ϵ && errVy < ϵ) && break 
+                (errPt < ϵ && errVx < ϵ && errVy < ϵ) && break 
                 (isnan(errPt) || isnan(errVx) || isnan(errVx)) && error("NaNs")        
             end
         end        
@@ -284,6 +284,8 @@ function Main_VEP_1D_vdev(σi; params=(
         probes.fric_out[it] = -τxy[iA]./(τyy[iA] .- Pt[iA])
         probes.fric_in[it]  = -τxy[iB]./(τyy[iB] .- Pt[iB])
         probes.εyy[it]      = εyy[iB]
+        probes.εyy_out[it]  = εyy[iA]
+        probes.εyy_in[it]   = εyy[iB]
         probes.fric[it]     = -τxy[iB]./(τyy[iB] .- Pt[iB])
         probes.θs3[it]      = atand.(σ3.z[iB] ./ σ3.x[iB])
         probes.σxx[it]      = (τxx[iB]-Pt[iB])*sc.σ
@@ -291,7 +293,6 @@ function Main_VEP_1D_vdev(σi; params=(
         probes.σxx_in[it]   = (τxx[iB]-Pt[iB])*sc.σ
         probes.γxy_out[it]  = εxy[iA]
         probes.γxy_in[it]   = εxy[iB] 
-        
         
         # Visualisation
         if visu==true && (mod(it, nout_viz)==0 || it==1 || it==Nt)
@@ -334,11 +335,11 @@ function Main_VEP_1D_vdev(σi; params=(
         end
     end
     if make_gif gif(anim, "figures/Test1_MohrCircles_1D.gif", fps = 15) end
-    return (γxy=(0:Nt-1)*ε0*Δt*100, εyy=probes.εyy.*100, app_fric=probes.fric, σxx=.-probes.σxx./1e3, θ=probes.θs3)
+    return (γxy=(0:Nt-1)*ε0*Δt*100, εyy=probes.εyy.*100, app_fric=probes.fric, σxx=.-probes.σxx./1e3, θ=probes.θs3, σxx_out=probes.σxx_out/1e3, σxx_in=probes.σxx_in/1e3, θ_out=probes.θs3_out, θ_in=probes.θs3_in, γxy_out=probes.γxy_out.*100, γxy_in=probes.γxy_in.*100, εyy_out=probes.εyy_out.*100, εyy_in=probes.εyy_in.*100)
 end
 
 #  # Case B
-#  σi       = (xx = -400e3, yy=-100e3)
+#  σi       = (xx = -400e3, yy=-100e3, xy=0.0)
 
 # Main_VEP_1D_vdev(σi; visu=true)
 

@@ -2,19 +2,21 @@
 using PlasticityTests, Plots, Printf, LinearAlgebra
 function Main_VEP_1D_vdev_coss(σi; params=(
     #---------------#
-    K   = 6.6666666667e6, # K = 3/2*Gv in Vermeer (1990)
-    G   = 10e6,
-    c   = 0.,
-    ϕ   = 40/180*π,
-    ψ   = 10/180*π,
-    θt  = 25/180*π,
-    ηvp = 0.,
-    γ̇xy = 0.00001,
-    Δt  = 20/1,
-    nt  = 400*1,
-    law = :MC_Vermeer1990,
-    oop = :Vermeer1990,
-    pl  = true), 
+    K    = 6.6666666667e6, # K = 3/2*Gv in Vermeer (1990)
+    G    = 10e6,
+    c    = 0.,
+    ϕ    = 40/180*π,
+    ψ    = 10/180*π,
+    θt   = 25/180*π,
+    ηvp  = 0.,
+    lc   = 5e2,
+    γ̇xy  = 0.00001,
+    Δt   = 20,
+    nt   = 400,
+    law  = :MC_Vermeer1990,
+    coss = true,
+    oop  = :Vermeer1990,
+    pl   = true), 
     #---------------#
     visu     = true, 
     make_gif = false,  
@@ -23,7 +25,7 @@ function Main_VEP_1D_vdev_coss(σi; params=(
     )
     sc = (σ = params.G, L = 1.0, t = 1.0/params.γ̇xy)
 
-    coss  = false
+    coss  = params.coss
 
     # Visualisation is important!
     if visu==false 
@@ -54,13 +56,13 @@ function Main_VEP_1D_vdev_coss(σi; params=(
     G          = params.G/sc.σ
     Kb         = params.K/sc.σ
     Coh0       = params.c/sc.σ
-    Coh1       =      1.0/sc.σ
+    Coh1       =  1.0/100/sc.σ
     μs         = 1e52/(sc.σ*sc.t)
     ηvp        = params.ηvp/(sc.σ*sc.t)
     ϕ          = params.ϕ
     ψ          = params.ψ   
     Gc         = G
-    lc         = 5e2/sc.L
+    lc         = params.lc/sc.L
 
     # Numerical parameters
     Nt         = params.nt-1
@@ -86,7 +88,7 @@ function Main_VEP_1D_vdev_coss(σi; params=(
     τyy0       =  τyyi*ones(Ncy+1)
     τzz0       =  τzzi*ones(Ncy+1)
     τxy0       =  τxyi*ones(Ncy+1)
-    Coh        =  ones((Ncy+1)).*Coh1/650; 
+    Coh        =  ones((Ncy+1)).*Coh1; 
     Coh[Int64(ceil(Ncy/2))] = Coh0  
     F          =  zeros((Ncy+1))
     Fc         =  zeros((Ncy+1))
@@ -150,7 +152,7 @@ function Main_VEP_1D_vdev_coss(σi; params=(
     # Monitoring
     probes    = (Ẇ0 = zeros(Nt), τxy0 = zeros(Nt), σyy0 = zeros(Nt), Vx0 = zeros(Nt), τii, εyy = zeros(Nt), σxx=zeros(Nt), fric=zeros(Nt), θs3 = zeros(Nt), 
                 θs3_out = zeros(Nt), θs3_in = zeros(Nt), fric_in = zeros(Nt), fric_out = zeros(Nt), 
-                σxx_in = zeros(Nt), σxx_out = zeros(Nt), γxy_in = zeros(Nt), γxy_out = zeros(Nt))
+                σxx_in = zeros(Nt), σxx_out = zeros(Nt), εyy_in = zeros(Nt), εyy_out = zeros(Nt), γxy_in = zeros(Nt), γxy_out = zeros(Nt))
     η        .= μs
    
     # BC
@@ -327,8 +329,10 @@ function Main_VEP_1D_vdev_coss(σi; params=(
         probes.θs3_in[it]   = atand(σ3.z[iB] ./ σ3.x[iB])
         probes.fric_out[it] = -τxy[iA]./(τyy[iA] .- Pt[iA])
         probes.fric_in[it]  = -τxy[iB]./(τyy[iB] .- Pt[iB])
-        probes.εyy[it]      = εyy[iB]
         probes.fric[it]     = -τxy[iB]./(τyy[iB] .- Pt[iB])
+        probes.εyy[it]      = εyy[iB]
+        probes.εyy_out[it]  = εyy[iA]
+        probes.εyy_in[it]   = εyy[iB]
         probes.θs3[it]      = atand.(σ3.z[iB] ./ σ3.x[iB])
         probes.σxx[it]      = (τxx[iB]-Pt[iB])*sc.σ
         probes.σxx_out[it]  = (τxx[iA]-Pt[iA])*sc.σ
@@ -377,10 +381,10 @@ function Main_VEP_1D_vdev_coss(σi; params=(
         end
     end
     if make_gif gif(anim, "figures/Test1_MohrCircles_1D.gif", fps = 15) end
-    return (γxy=(0:Nt-1)*ε0*Δt*100, εyy=probes.εyy.*100, app_fric=probes.fric, σxx=.-probes.σxx./1e3, θ=probes.θs3)
+    return (γxy=(0:Nt-1)*ε0*Δt*100, εyy=probes.εyy.*100, app_fric=probes.fric, σxx=.-probes.σxx./1e3, θ=probes.θs3, σxx_out=probes.σxx_out/1e3, σxx_in=probes.σxx_in/1e3, θ_out=probes.θs3_out, θ_in=probes.θs3_in, γxy_out=probes.γxy_out.*100, γxy_in=probes.γxy_in.*100, εyy_out=probes.εyy_out.*100, εyy_in=probes.εyy_in.*100)
 end
 
- # Case B
- σi       = (xx = -400e3, yy=-100e3)
+#  # Case B
+#  σi       = (xx = -400e3, yy=-100e3, xy=0.0)
 
-Main_VEP_1D_vdev_coss(σi; visu=true)
+# Main_VEP_1D_vdev_coss(σi; visu=true)

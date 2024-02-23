@@ -17,7 +17,7 @@ function main()
     Kv = 2/3*Gv
 
     # Case A - MC
-    σi       = (xx = -25e3, yy=-100e3)
+    σi       = (xx = -25e3, yy=-100e3, xy=0.0)
     CaseA_0D = Vermeer1990_StressIntegration_vdev(σi)
 
     # Case A - Drucker-Prager 
@@ -134,7 +134,7 @@ function main()
     #-----------------------------------------------------------------#
 
     # Case B
-    σi       = (xx = -400e3, yy=-100e3)
+    σi       = (xx = -400e3, yy=-100e3, xy=0.0)
     CaseB_0D = Vermeer1990_StressIntegration_vdev(σi)
 
     # Case B - Drucker-Prager 

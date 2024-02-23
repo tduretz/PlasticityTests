@@ -11,7 +11,7 @@ function main()
     # formulation = :total
 
     # Case A
-    σi       = (xx = -25e3, yy=-100e3)
+    σi       = (xx = -25e3, yy=-100e3, xy=0.0)
     if formulation==:voldev
         CaseA_0D = Vermeer1990_StressIntegration_vdev(σi)
     elseif formulation==:total
@@ -19,7 +19,7 @@ function main()
     end
 
     # Case B
-    σi       = (xx = -400e3, yy=-100e3)
+    σi       = (xx = -400e3, yy=-100e3, xy=0.0)
     if formulation==:voldev
         CaseB_0D = Vermeer1990_StressIntegration_vdev(σi)
     elseif formulation==:total

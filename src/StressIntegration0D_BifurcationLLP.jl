@@ -1,30 +1,44 @@
-function Vermeer3_ana_llp2013(phi, psi, nu, sxx, syy, sxy, G, nstep, gamma_dot_xy,factor)
-    beenhere = 0
-    c = 0
-    sigma_dot_yy = 0
-    eps_dot_xx = 0
-    gamma_dot_xy_in = gamma_dot_xy
-    gamma_dot_xy_out = gamma_dot_xy
+function Vermeer3_ana_llp2013(σi, params, factor)
+    
+    sxx = σi.xx
+    syy = σi.yy
+    sxy = σi.xy
+    
+    beenhere         = 0
+    nstep            = params.nt
+    G                = params.G
+    K                = params.K 
+    c                = params.c
+    phi              = params.ϕ
+    psi              = params.ψ
+    sigma_dot_yy     = 0.
+    eps_dot_xx       = 0.
+    gamma_dot_xy_in  = params.γ̇xy*params.Δt
+    gamma_dot_xy_out = params.γ̇xy*params.Δt
 
     sigma_out = zeros(3,nstep)
     sigma_out[:,1]=[sxx, syy, sxy]'
     sigma_in = zeros(3,nstep)
     sigma_in[:,1] = [sxx, syy, sxy]'
     epsilon_out = zeros(3,nstep)
-    epsilon_in = zeros(3,nstep)
-    alpha = zeros(nstep)
-    beta  = zeros(nstep)
-    theta = zeros(nstep) 
-    theta_out = zeros(nstep)  
-    
+    epsilon_in  = zeros(3,nstep)
+    alpha       = zeros(nstep)
+    beta        = zeros(nstep)
+    theta       = zeros(nstep) 
+    theta_out   = zeros(nstep)  
 
-    L = 2 * G * nu / (1 - 2 * nu)
-    D = [L + 2 * G L 0; L L + 2 * G 0; 0 0 G]
+    nu = (3K-2G)/(6K+2G)
+    L  = 2 * G * nu / (1 - 2 * nu)
+    D  = [L + 2 * G L 0; L L + 2 * G 0; 0 0 G]
 
-    theta[1] = 90
+    if sxx>syy
+        theta[1]     = 0.0
+    else
+        theta[1]     = 90.0
+    end
     theta_out[1] = theta[1]
-    beta[1] = π / 2
-    alpha[1] = beta[1]
+    beta[1]      = π / 2
+    alpha[1]     = beta[1]
 
     for i = 1:nstep-1
         M = copy(D)
@@ -47,7 +61,7 @@ function Vermeer3_ana_llp2013(phi, psi, nu, sxx, syy, sxy, G, nstep, gamma_dot_x
             M = D - 1 / d * a * b'
         end
 
-        eps_dot_yy_in = -M[2, 3] / M[2, 2] * gamma_dot_xy_in
+        eps_dot_yy_in   = -M[2, 3] / M[2, 2] * gamma_dot_xy_in
         sigma_dot_xx_in = (-M[1, 2] * M[2, 3] + M[1, 3] * M[2, 2]) / M[2, 2] * gamma_dot_xy_in
         sigma_dot_xy_in = (-M[3, 2] * M[2, 3] + M[3, 3] * M[2, 2]) / M[2, 2] * gamma_dot_xy_in
 
@@ -93,7 +107,7 @@ function Vermeer3_ana_llp2013(phi, psi, nu, sxx, syy, sxy, G, nstep, gamma_dot_x
         alpha[i + 1] = asin((sigma_out[2, i + 1] - sigma_out[1, i + 1]) / 2 / R)
         theta_out[i + 1] = 45 + alpha[i + 1] * 90 / π
     end
-    return sigma_out, sigma_in,theta_out,theta, epsilon_out, epsilon_in 
+    return (σ_out=sigma_out, σ_in=sigma_in, θ_out=theta_out, θ_in=theta, ε_out=epsilon_out, ε_in=epsilon_in) 
 end
 
 function f(sigma, phi, c)

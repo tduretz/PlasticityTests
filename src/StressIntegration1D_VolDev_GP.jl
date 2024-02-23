@@ -226,7 +226,7 @@ function Main_VEP_1D_vdev_GP(σi; params=(
             # PT time steps
             @. η_mm = min.(ηvep[1:end-1], ηvep[2:end]); 
             @. ΔτV   = Δy^2/(η_mm)/2.1 /4 /10
-            @. ΔτPt  = ηvep/Δy/G/Δt/3/10
+            @. ΔτPt  = 3/2
             
             # Residuals
             @. RPt          =  (- Kb*Δt*∇v - (Pt - Pt0))
@@ -344,7 +344,7 @@ function Main_VEP_1D_vdev_GP(σi; params=(
 end
 
 #  # Case B
-#  σi       = (xx = -400e3, yy=-100e3)
+#  σi       = (xx = -400e3, yy=-100e3, xy=0.0)
 
 # Main_VEP_1D_vdev(σi; visu=true)
 
