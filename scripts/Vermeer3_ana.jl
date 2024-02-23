@@ -7,25 +7,36 @@ function Vermeer3_ana()
     c = 0
     gamma_tot = 0.08
     nu = 0.1
-    col = 'b'
-    ifig = 8
-
-    # Condition Initiale
-    sxx = -200e3
+    # IC
+    sxx = -400e3
     syy = -100e3
     sxy = 0
-
     # CL
     dt = 1
     gamma_dot_xy = 1e-4
-    eps_dot_xx = 0
-    sigma_dot_yy = 0
-
     nstep = Int64(gamma_tot / (gamma_dot_xy * dt))
-    sigma_out, sigma_in, beta, alpha, epsilon_out, epsilon_in = Vermeer3_ana_llp2013(phi, psi, nu, sxx, syy, sxy, G, nstep, gamma_dot_xy)
+    shearband_thickness = 1.
+    model_thickness     = 10.
+    factor = model_thickness/shearband_thickness
+    sigma_out, sigma_in, theta_out,theta,  epsilon_out, epsilon_in = Vermeer3_ana_llp2013(phi, psi, nu, sxx, syy, sxy, G, nstep, gamma_dot_xy,factor)
+# Plotting
+    
+p1=plot(epsilon_out[3, :], -sigma_in[3, :] ./ sigma_in[2, :], label="sxy/syy", color=:red)
+p1=plot!(epsilon_out[3, :], -sigma_out[3, :] ./ sigma_out[2, :], label="sxy/syy", color=:blue)
+
+p2=plot(epsilon_out[3, :], theta, label="theta", color=:red)
+p2=plot!(epsilon_out[3, :], theta_out, label="theta", color=:blue)
+
+p3=plot(epsilon_out[3, :], epsilon_in[2, :], label="epsilon yy", color=:red)
+p3=plot!(epsilon_out[3, :], epsilon_out[2, :], label="epsilon yy", color=:blue)
+
+p4=plot(epsilon_out[3, :], -sigma_in[1, :], label="sxx", color=:red)
+p4=plot!(epsilon_out[3, :], -sigma_out[1, :], label="sxx", color=:blue)
+
+display(plot(p1,p2,p3,p4))
 end
 
-function Vermeer3_ana_llp2013(phi, psi, nu, sxx, syy, sxy, G, nstep, gamma_dot_xy)
+function Vermeer3_ana_llp2013(phi, psi, nu, sxx, syy, sxy, G, nstep, gamma_dot_xy,factor)
     beenhere = 0
     c = 0
     sigma_dot_yy = 0
@@ -71,7 +82,7 @@ function Vermeer3_ana_llp2013(phi, psi, nu, sxx, syy, sxy, G, nstep, gamma_dot_x
             b = D * dFdsig
 
             d = dFdsig' * D * dGdsig
-            @show M = D - 1 / d * a * b'
+            M = D - 1 / d * a * b'
         end
 
         eps_dot_yy_in = -M[2, 3] / M[2, 2] * gamma_dot_xy_in
@@ -84,7 +95,7 @@ function Vermeer3_ana_llp2013(phi, psi, nu, sxx, syy, sxy, G, nstep, gamma_dot_x
             sigma_dot_xy_out = (-M[3, 2] * M[2, 3] + M[3, 3] * M[2, 2]) / M[2, 2] * gamma_dot_xy_out
         else
             if beenhere == 0
-                gamma_dot_xy_in *= 10
+                gamma_dot_xy_in *= factor
                 beenhere = 1
             end
 
@@ -120,23 +131,7 @@ function Vermeer3_ana_llp2013(phi, psi, nu, sxx, syy, sxy, G, nstep, gamma_dot_x
         alpha[i + 1] = asin((sigma_out[2, i + 1] - sigma_out[1, i + 1]) / 2 / R)
         theta_out[i + 1] = 45 + alpha[i + 1] * 90 / π
     end
-
-    # Plotting
-    
-    p1=plot(epsilon_out[3, :], -sigma_in[3, :] ./ sigma_in[2, :], label="sxy/syy", color=:red)
-    p1=plot!(epsilon_out[3, :], -sigma_out[3, :] ./ sigma_out[2, :], label="sxy/syy", color=:blue)
-
-    p2=plot(epsilon_out[3, :], theta, label="theta", color=:red)
-    p2=plot!(epsilon_out[3, :], theta_out, label="theta", color=:blue)
-
-    p3=plot(epsilon_out[3, :], epsilon_in[2, :], label="epsilon yy", color=:red)
-    p3=plot!(epsilon_out[3, :], epsilon_out[2, :], label="epsilon yy", color=:blue)
-
-    p4=plot(epsilon_out[3, :], -sigma_in[1, :], label="sxx", color=:red)
-    p4=plot!(epsilon_out[3, :], -sigma_out[1, :], label="sxx", color=:blue)
-
-    display(plot(p1,p2,p3,p4))
-    return sigma_out, sigma_in, beta, alpha, epsilon_out, epsilon_in 
+    return sigma_out, sigma_in,theta_out,theta, epsilon_out, epsilon_in 
 end
 
 function f(sigma, phi, c)
