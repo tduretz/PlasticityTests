@@ -7,7 +7,10 @@ function Vermeer3_ana()
     c = 0
     gamma_tot = 0.08
     nu = 0.1
-    # IC
+    col = 'b'
+    ifig = 8
+
+    # Condition Initiale
     sxx = -400e3
     syy = -100e3
     sxy = 0
