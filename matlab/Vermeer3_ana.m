@@ -6,7 +6,7 @@ phi       = 40*degrad;
 psi       = 10*degrad;
 c         =  0;
 gamma_tot = 0.08;
-nu        = 0.1 ;
+nu        = 0. ;
 col       = 'b';
 ifig      = 8;
 %%%%  Condition Initiale
@@ -20,10 +20,11 @@ eps_dot_xx   = 0;
 sigma_dot_yy = 0;
 
 nstep = gamma_tot/(gamma_dot_xy*dt);
-[sigma_out,sigma_in,beta,alpha,epsilon_out,epsilon_in] = Vermeer3_ana_llp2013(phi,psi,nu,sxx,syy,sxy,G,nstep,gamma_dot_xy);
+thick  = 1/10; %one cell thick in a 10 cell model / ratio of band thickness to model thickness
+[sigma_out,sigma_in,beta,alpha,epsilon_out,epsilon_in] = Vermeer3_ana_llp2013(phi,psi,nu,sxx,syy,sxy,G,nstep,gamma_dot_xy,thick);
 end
 
-function [sigma_out,sigma_in,beta,alpha,epsilon_out,epsilon_in] = Vermeer3_ana_llp2013(phi,psi,nu,sxx,syy,sxy,G,nstep,gamma_dot_xy)
+function [sigma_out,sigma_in,beta,alpha,epsilon_out,epsilon_in] = Vermeer3_ana_llp2013(phi,psi,nu,sxx,syy,sxy,G,nstep,gamma_dot_xy,thick)
 beenhere = 0;
 %elasticity
 L       = 2*G*nu/(1-2*nu);
@@ -77,24 +78,13 @@ for i = 1:nstep
         sigma_dot_xy_out = (-M(3,2)*M(2,3) + M(3,3)*M(2,2))/M(2,2)*gamma_dot_xy_out;
     else
         if beenhere == 0 
-            gamma_dot_xy_in=gamma_dot_xy*10;
+            gamma_dot_xy_in=gamma_dot_xy/thick;
             beenhere = 1
         end  
-          Z1 = ((2*nu-1)*sin(beta(i))-sin(psi))*cos(beta(i));
-          Z2 =  (2*nu-1)*cos(beta(i))^2+ sin(beta(i))*(sin(phi)+sin(psi))- sin(phi)*sin(psi)- 1;
-          denom = (sin(beta(i))- sin(psi))* (sin(beta(i))- sin(phi))*cos(alpha(i));
-          Gamma = G*denom/Z2; 
-          alpha_dot= Gamma * gamma_dot_xy_in; 
-
-          %%%% 
-          sigma_dot_xx_in = -2*alpha_dot*cos(beta(i))/(cos(alpha(i))*(sin(beta(i))-sin(phi))); 
-          sigma_dot_xy_in = -alpha_dot/cos(alpha(i));
-          eps_dot_yy_in   = Z1/denom/2/G*alpha_dot; 
-
           eps_dot_yy_out   = 0;
           sigma_dot_xx_out = 0; 
-          sigma_dot_xy_out = -alpha_dot/cos(alpha(i));
-          gamma_dot_xy_out = -alpha_dot/G/cos(alpha(i));
+          sigma_dot_xy_out = sigma_dot_xy_in;
+          gamma_dot_xy_out = sigma_dot_xy_in/G;
      end
     % increment stress and strain 
     sigma_in(:,i+1)   = sigma_in(:,i)     +  [sigma_dot_xx_in; sigma_dot_yy; sigma_dot_xy_in];
@@ -102,7 +92,7 @@ for i = 1:nstep
     
     sigma_out(:,i+1)   = sigma_out(:,i)   +  [sigma_dot_xx_out; sigma_dot_yy; sigma_dot_xy_out];
     epsilon_out(:,i+1) = epsilon_out(:,i) +  [eps_dot_xx; eps_dot_yy_out; gamma_dot_xy_out];
-    gamma_bulk(i+1)    = gamma_bulk(i)    +  gamma_dot_xy; 
+    gamma_bulk(i+1)    = gamma_bulk(i)    +  gamma_dot_xy_in*thick+gamma_dot_xy_out*(1-thick); 
 
      % update alpha and beta + theta for post processing purpose 
     tau_star   = 1/2*sqrt((sigma_in(1,i+1)-sigma_in(2,i+1))^2+4*sigma_in(3,i+1)^2);
