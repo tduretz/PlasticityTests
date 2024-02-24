@@ -28,17 +28,17 @@ function Vermeer3_ana()
     LLP    = Vermeer3_ana_llp2013(σi, params, factor)
   
     # Plotting 
-    p1=plot( LLP.ε_out[3, :], -LLP.σ_in[3, :] ./ LLP.σ_in[2, :], label="sxy/syy_in", color=:red)
-    p1=plot!(LLP.ε_out[3, :], -LLP.σ_out[3, :] ./ LLP.σ_out[2, :], label="sxy/syy_out", color=:blue)
+    p1=plot( LLP.γ_bulk, -LLP.σ_in[3, :] ./ LLP.σ_in[2, :], label="sxy/syy_in", color=:red)
+    p1=plot!(LLP.γ_bulk, -LLP.σ_out[3, :] ./ LLP.σ_out[2, :], label="sxy/syy_out", color=:blue)
 
-    p2=plot( LLP.ε_out[3, :], LLP.θ_in, label="θ_in", color=:red)
-    p2=plot!(LLP.ε_out[3, :], LLP.θ_out, label="θ_out", color=:blue)
+    p2=plot( LLP.γ_bulk, LLP.θ_in, label="θ_in", color=:red)
+    p2=plot!(LLP.γ_bulk, LLP.θ_out, label="θ_out", color=:blue)
 
-    p3=plot( LLP.ε_out[3, :], LLP.ε_in[2, :], label="eyy_in", color=:red)
-    p3=plot!(LLP.ε_out[3, :], LLP.ε_out[2, :], label="eyy_out", color=:blue)
+    p3=plot( LLP.γ_bulk, LLP.ε_in[2, :], label="eyy_in", color=:red)
+    p3=plot!(LLP.γ_bulk, LLP.ε_out[2, :], label="eyy_out", color=:blue)
 
-    p4=plot( LLP.ε_out[3, :], -LLP.σ_in[1, :], label="sxx_in", color=:red)
-    p4=plot!(LLP.ε_out[3, :], -LLP.σ_out[1, :], label="sxx_out", color=:blue)
+    p4=plot( LLP.γ_bulk, -LLP.σ_in[1, :], label="sxx_in", color=:red)
+    p4=plot!(LLP.γ_bulk, -LLP.σ_out[1, :], label="sxx_out", color=:blue)
 
     display(plot(p1,p2,p3,p4))
 end
