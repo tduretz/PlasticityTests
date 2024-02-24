@@ -24,7 +24,7 @@ function main()
         lc   = 1e2,
         γ̇xy  = 0.00001,
         Δt   = 20/dt_fact,
-        nt   = 400*dt_fact,
+        nt   = 800*dt_fact,
         law  = :DruckerPrager,
         coss = false,
         oop  = :Vermeer1990,
@@ -63,8 +63,8 @@ function main()
     # p1 = plot!(CaseA_LLP.ε_out[3,1:stp:end]*100, -CaseA_LLP.σ_out[3,1:stp:end] ./ CaseA_LLP.σ_out[2,1:stp:end], label="sxy/syy_out", color=:blue)
     
     p1 = plot!(CaseB_1D.γxy, CaseB_1D.app_fric, color=:green)
-    p1 = plot!(CaseB_LLP.ε_out[3,1:stp:end]*100, -CaseB_LLP.σ_in[ 3,1:stp:end] ./ CaseB_LLP.σ_in[ 2,1:stp:end], label="sxy/syy_in",  color=:red)
-    p1 = plot!(CaseB_LLP.ε_out[3,1:stp:end]*100, -CaseB_LLP.σ_out[3,1:stp:end] ./ CaseB_LLP.σ_out[2,1:stp:end], label="sxy/syy_out", color=:red)
+    p1 = plot!(CaseB_LLP.γ_bulk[1:stp:end]*100, -CaseB_LLP.σ_in[ 3,1:stp:end] ./ CaseB_LLP.σ_in[ 2,1:stp:end], label="sxy/syy_in",  color=:red)
+    p1 = plot!(CaseB_LLP.γ_bulk[1:stp:end]*100, -CaseB_LLP.σ_out[3,1:stp:end] ./ CaseB_LLP.σ_out[2,1:stp:end], label="sxy/syy_out", color=:red)
 
     #------------------------------#
     # Panel (1,2) - Horizontal stress
@@ -75,8 +75,8 @@ function main()
 
     p2 = plot!(CaseB_1D.γxy,  -CaseB_1D.σxx_in, color=:green)
     p2 = plot!(CaseB_1D.γxy,  -CaseB_1D.σxx_out, label=:none, color=:green)
-    p2 = plot!(CaseB_LLP.ε_out[3,1:stp:end]*100, -CaseB_LLP.σ_in[ 1, 1:stp:end]./1e3, color=:red)
-    p2 = plot!(CaseB_LLP.ε_out[3,1:stp:end]*100, -CaseB_LLP.σ_out[1, 1:stp:end]./1e3, color=:red)
+    p2 = plot!(CaseB_LLP.γ_bulk[1:stp:end]*100, -CaseB_LLP.σ_in[ 1, 1:stp:end]./1e3, color=:red)
+    p2 = plot!(CaseB_LLP.γ_bulk[1:stp:end]*100, -CaseB_LLP.σ_out[1, 1:stp:end]./1e3, color=:red)
 
     #------------------------------#
     # Panel (2,1) - Volume change
@@ -87,8 +87,8 @@ function main()
     p3 = plot!(CaseB_1D.γxy, CaseB_1D.εyy_in, color=:green, label="1D in")
     p3 = plot!(CaseB_1D.γxy, CaseB_1D.εyy_out, color=:green, label="1D out")
 
-    p3 = plot!(CaseB_LLP.ε_out[3,1:stp:end]*100, CaseB_LLP.ε_in[ 2, 1:stp:end]*100, label="LLP in" , color=:red)
-    p3 = plot!(CaseB_LLP.ε_out[3,1:stp:end]*100, CaseB_LLP.ε_out[2, 1:stp:end]*100, label="LLP out", color=:red)
+    p3 = plot!(CaseB_LLP.γ_bulk[1:stp:end]*100, CaseB_LLP.ε_in[ 2, 1:stp:end]*100, label="LLP in" , color=:red)
+    p3 = plot!(CaseB_LLP.γ_bulk[1:stp:end]*100, CaseB_LLP.ε_out[2, 1:stp:end]*100, label="LLP out", color=:red)
 
 
     # Panel (2,2) - Stress orientation
@@ -98,8 +98,8 @@ function main()
     
     p4 = plot!(CaseB_1D.γxy, CaseB_1D.θ_in, color=:green)
     p4 = plot!(CaseB_1D.γxy, CaseB_1D.θ_out, color=:green)
-    p4 = plot!(CaseB_LLP.ε_out[3,1:stp:end]*100, CaseB_LLP.θ_in[1:stp:end], label=:none, color=:red)
-    p4 = plot!(CaseB_LLP.ε_out[3,1:stp:end]*100, CaseB_LLP.θ_out[1:stp:end], label=:none, color=:red)
+    p4 = plot!(CaseB_LLP.γ_bulk[1:stp:end]*100, CaseB_LLP.θ_in[1:stp:end], label=:none, color=:red)
+    p4 = plot!(CaseB_LLP.γ_bulk[1:stp:end]*100, CaseB_LLP.θ_out[1:stp:end], label=:none, color=:red)
 
 
     #------------------------------# 
