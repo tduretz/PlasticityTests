@@ -25,7 +25,8 @@ function Vermeer3_ana_llp2013(σi, params, factor)
     alpha       = zeros(nstep)
     beta        = zeros(nstep)
     theta       = zeros(nstep) 
-    theta_out   = zeros(nstep)  
+    theta_out   = zeros(nstep)
+    gamma_bulk  = zeros(nstep)  
 
     nu = (3K-2G)/(6K+2G)
     L  = 2 * G * nu / (1 - 2 * nu)
@@ -75,24 +76,12 @@ function Vermeer3_ana_llp2013(σi, params, factor)
                 beenhere = 1
             end
 
-            detA = (sin(beta[i]) - sin(phi)) * (sin(beta[i]) - sin(psi)) / 4
-            Z1 = -2 * (nu - 1) * (-sin(alpha[i]) * sin(phi) + cos(alpha[i] - beta[i])) * cos(beta[i])
-            Z2 = (sin(beta[i]) - sin(phi)) * (sin(beta[i]) - sin(psi)) * cos(alpha[i])
-            Gamma = detA / (Z2 + Z1)
-            alpha_dot = 2 * G * Gamma * gamma_dot_xy_in
-
-            sigma_dot_xx_in = 4 * alpha_dot * cos(alpha[i]) * cos(beta[i]) / (sin(beta[i]) - sin(phi))
-            sigma_dot_xy_in = 2 * alpha_dot * cos(alpha[i])
-
-            Z1 = (1 - 2 * nu) * sin(alpha[i]) * sin(psi) * (sin(beta[i]) - sin(phi))
-            Z2 = (1 - nu) * cos(alpha[i]) * cos(beta[i]) * (sin(beta[i]) + sin(psi))
-            Z3 = sin(alpha[i]) * sin(beta[i]) * (sin(beta[i]) - sin(phi))
-            eps_dot_yy_in = (Z1 + Z2 + Z3) / detA / 2 / G * alpha_dot
-
-            eps_dot_yy_out = -2 * alpha_dot * nu * sin(alpha[i]) / G
-            sigma_dot_xx_out = 4 * alpha_dot * sin(alpha[i])
-            sigma_dot_xy_out = sigma_dot_xy_in
+            eps_dot_yy_out   = 0 # elastic deformation with constant sigma_yy and sigma_xy
+            sigma_dot_xx_out = 0 # epsilon xx is 0 in 1D simple shear and sigma_dot_yy = 0 
+            sigma_dot_xy_out = sigma_dot_xy_in # continuity 
+            gamma_dot_xy_out = sigma_dot_xy_in/G # elastic deformation
         end
+        gamma_bulk[i+1]      = gamma_bulk[i]  +  gamma_dot_xy_in/factor+gamma_dot_xy_out*(1-1/factor)     
 
         sigma_in[:, i + 1]    = sigma_in[:, i]   + [sigma_dot_xx_in, sigma_dot_yy, sigma_dot_xy_in]
         epsilon_in[:, i + 1]  = epsilon_in[:, i] + [eps_dot_xx, eps_dot_yy_in, gamma_dot_xy_in]
@@ -107,7 +96,7 @@ function Vermeer3_ana_llp2013(σi, params, factor)
         alpha[i + 1] = asin((sigma_out[2, i + 1] - sigma_out[1, i + 1]) / 2 / R)
         theta_out[i + 1] = 45 + alpha[i + 1] * 90 / π
     end
-    return (σ_out=sigma_out, σ_in=sigma_in, θ_out=theta_out, θ_in=theta, ε_out=epsilon_out, ε_in=epsilon_in) 
+    return (σ_out=sigma_out, σ_in=sigma_in, θ_out=theta_out, θ_in=theta, ε_out=epsilon_out, ε_in=epsilon_in,γ_bulk= gamma_bulk ) 
 end
 
 function f(sigma, phi, c)
