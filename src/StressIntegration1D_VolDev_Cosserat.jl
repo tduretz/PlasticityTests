@@ -152,7 +152,8 @@ function Main_VEP_1D_vdev_coss(σi; params=(
     # Monitoring
     probes    = (Ẇ0 = zeros(Nt), τxy0 = zeros(Nt), σyy0 = zeros(Nt), Vx0 = zeros(Nt), τii, εyy = zeros(Nt), σxx=zeros(Nt), fric=zeros(Nt), θs3 = zeros(Nt), 
                 θs3_out = zeros(Nt), θs3_in = zeros(Nt), fric_in = zeros(Nt), fric_out = zeros(Nt), 
-                σxx_in = zeros(Nt), σxx_out = zeros(Nt), εyy_in = zeros(Nt), εyy_out = zeros(Nt), γxy_in = zeros(Nt), γxy_out = zeros(Nt))
+                σxx_in = zeros(Nt), σxx_out = zeros(Nt), εyy_in = zeros(Nt), εyy_out = zeros(Nt), γxy_in = zeros(Nt), γxy_out = zeros(Nt),
+                sdotrat_in = zeros(Nt), sdotrat_out = zeros(Nt))
     η        .= μs
    
     # BC
@@ -174,6 +175,11 @@ function Main_VEP_1D_vdev_coss(σi; params=(
     rel   = 1e-2
     errPt, errVx, errVy = 0., 0., 0.
 
+    τxy_v  = zeros(Ncy+1)
+    τxy_v0 = zeros(Ncy+1)
+    τ̇xy_v  = zeros(Ncy+1)
+    τ̇xy_e  = zeros(Ncy+1)
+
     # anim = @animate for it=1:Nt
     for it=1:Nt
         # History
@@ -186,6 +192,7 @@ function Main_VEP_1D_vdev_coss(σi; params=(
         @. Rz0   = Rz
         @. λ̇     = 0.0
         @. λ̇rel  = 0.0
+        @. τxy_v0 = τxy_v
 
         # nout= 1
         @views for iter=1:niter
@@ -259,7 +266,11 @@ function Main_VEP_1D_vdev_coss(σi; params=(
                 @. λ̇rel  += (F.>0) .* Fc / (ηvp + ηve + Kb*Δt*sin(ϕ)*sin(ψ)) 
                 if maximum(Fc) < ϵ break end 
             end 
-          
+
+            @. τxy_v    = ηvp*ε̇xy_pl   
+            @. τ̇xy_e    = 2*ηve * ε̇xy #+ τxy0/(2*ηe)
+            @. τ̇xy_v    = (τxy_v - τxy_v0)/Δt
+            
             # PT time steps
             @. η_mm  = min.(ηve[1:end-1], ηve[2:end]); 
             @. ΔτV   = Δy^2/(η_mm)/2.1 /4
@@ -339,6 +350,8 @@ function Main_VEP_1D_vdev_coss(σi; params=(
         probes.σxx_in[it]   = (τxx[iB]-Pt[iB])*sc.σ
         probes.γxy_out[it]  = εxy[iA]
         probes.γxy_in[it]   = εxy[iB] 
+        probes.sdotrat_out[it] = τ̇xy_v[iA]*sc.σ/sc.t
+        probes.sdotrat_in[it]  = τ̇xy_v[iB]*sc.σ/sc.t
         
         # Visualisation
         if visu==true && (mod(it, nout_viz)==0 || it==1 || it==Nt)
@@ -381,7 +394,7 @@ function Main_VEP_1D_vdev_coss(σi; params=(
         end
     end
     if make_gif gif(anim, "figures/Test1_MohrCircles_1D.gif", fps = 15) end
-    return (γxy=(0:Nt-1)*ε0*Δt*100, εyy=probes.εyy.*100, app_fric=probes.fric, σxx=.-probes.σxx./1e3, θ=probes.θs3, σxx_out=probes.σxx_out/1e3, σxx_in=probes.σxx_in/1e3, θ_out=probes.θs3_out, θ_in=probes.θs3_in, γxy_out=probes.γxy_out.*100, γxy_in=probes.γxy_in.*100, εyy_out=probes.εyy_out.*100, εyy_in=probes.εyy_in.*100)
+    return (γxy=(0:Nt-1)*ε0*Δt*100, εyy=probes.εyy.*100, app_fric=probes.fric, σxx=.-probes.σxx./1e3, θ=probes.θs3, σxx_out=probes.σxx_out/1e3, σxx_in=probes.σxx_in/1e3, θ_out=probes.θs3_out, θ_in=probes.θs3_in, γxy_out=probes.γxy_out.*100, γxy_in=probes.γxy_in.*100, εyy_out=probes.εyy_out.*100, εyy_in=probes.εyy_in.*100, srat_in=probes.sdotrat_out, srat_out=probes.sdotrat_out)
 end
 
 #  # Case B

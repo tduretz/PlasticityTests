@@ -10,7 +10,7 @@ function main()
      
     # Resolution
     Ncy     = 10
-    dt_fact = 1  
+    dt_fact = 1 
 
     # 1D model
     params = (
@@ -20,39 +20,41 @@ function main()
         ϕ    = 40/180*π,
         ψ    = 10/180*π,
         θt   = 25/180*π,
-        ηvp  = 0e7,
+        ηvp  = 0*1e7,
         lc   = 1e2,
         γ̇xy  = 0.00001,
         Δt   = 20/dt_fact,
-        nt   = 800*dt_fact,
-        law  = :DruckerPrager,
-        coss = false,
-        oop  = :Vermeer1990,
-        pl   = true) # default parameter set
-    
-    # CaseA_1D  = Main_VEP_1D_vdev_coss(σiA; params, visu=false, Ncy=Ncy)
-    CaseB_1D  = Main_VEP_1D_vdev(σiB; params, visu=true, Ncy=Ncy)
-
-    # LLP solution
-    params = (
-        K    = Kv,
-        G    = Gv,
-        c    = 0.0,
-        ϕ    = 40/180*π,
-        ψ    = 10/180*π,
-        θt   = 25/180*π,
-        ηvp  = 0.,
-        lc   = 1e3,
-        γ̇xy  = 0.00001,
-        Δt   = 2,
-        nt   = 4000,
+        nt   = 400*dt_fact,
         law  = :DruckerPrager,
         coss = true,
         oop  = :Vermeer1990,
         pl   = true) # default parameter set
+    
+    # CaseA_1D  = Main_VEP_1D_vdev_coss(σiA; params, visu=false, Ncy=Ncy)
+    CaseB_1D  = Main_VEP_1D_vdev_coss(σiB; params, visu=true, Ncy=Ncy)
 
-    CaseA_LLP = Vermeer3_ana_llp2013(σiA, params, Ncy)
-    CaseB_LLP = Vermeer3_ana_llp2013(σiB, params, Ncy)
+    # # LLP solution
+    # params = (
+    #     K    = Kv,
+    #     G    = Gv,
+    #     c    = 0.0,
+    #     ϕ    = 40/180*π,
+    #     ψ    = 10/180*π,
+    #     θt   = 25/180*π,
+    #     ηvp  = 0.,
+    #     lc   = 1e3,
+    #     γ̇xy  = 0.00001,
+    #     Δt   = 2,
+    #     nt   = 4000,
+    #     law  = :DruckerPrager,
+    #     coss = true,
+    #     oop  = :Vermeer1990,
+    #     pl   = true) # default parameter set
+
+    # Cosserat with lc   = 1e3
+    CaseB_LLP = Vermeer3_ana_llp2013(σiB, params, 10/2)
+    
+    # CaseB_LLP = Vermeer3_ana_llp2013_v2(σiB, params, 10)
 
     #------------------------------#
     stp = 1 # scatter step
@@ -73,10 +75,16 @@ function main()
     # p2 = plot!(CaseA_LLP.ε_out[3,1:stp:end]*100, -CaseA_LLP.σ_in[1, 1:stp:end]./1e3, label=:none, color=:blue)
     # p2 = plot!(CaseA_LLP.ε_out[3,1:stp:end]*100, -CaseA_LLP.σ_out[1, 1:stp:end]./1e3, label=:none, color=:blue)
 
+    # SXX plot
     p2 = plot!(CaseB_1D.γxy,  -CaseB_1D.σxx_in, color=:green)
     p2 = plot!(CaseB_1D.γxy,  -CaseB_1D.σxx_out, label=:none, color=:green)
     p2 = plot!(CaseB_LLP.γ_bulk[1:stp:end]*100, -CaseB_LLP.σ_in[ 1, 1:stp:end]./1e3, color=:red)
     p2 = plot!(CaseB_LLP.γ_bulk[1:stp:end]*100, -CaseB_LLP.σ_out[1, 1:stp:end]./1e3, color=:red)
+
+    # @show CaseB_1D.srat_in
+    # p2 = plot!(CaseB_1D.γxy,  CaseB_1D.srat_in, color=:green)
+    # p2 = plot!(CaseB_1D.γxy,  CaseB_1D.srat_out, label=:none, color=:green)
+    # p2 = plot!(CaseB_LLP.γ_bulk[1:stp:end]*100, CaseB_LLP.dsxy_v[1:stp:end], color=:red)
 
     #------------------------------#
     # Panel (2,1) - Volume change

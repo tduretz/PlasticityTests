@@ -43,7 +43,13 @@ export Main_VEP_1D_tot
 include("./StressIntegration1D_TotalStress_GP.jl")
 export Main_VEP_1D_tot_GP
 
+include("./StressIntegration0D_BifurcationLLP_Test2.jl")
+export Vermeer2_analytics
+
 include("./StressIntegration0D_BifurcationLLP.jl")
 export Vermeer3_ana_llp2013
+
+include("./StressIntegration0D_BifurcationLLP_v2.jl")
+export Vermeer3_ana_llp2013_v2
 
 end # module PlasticityTests

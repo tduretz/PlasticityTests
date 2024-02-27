@@ -26,7 +26,7 @@ function Main_VEP_1D_tot_GP(σi; params=(
     end
     
     # Unit system
-    CharDim    = SI_units(length=1000m, temperature=1000C, stress=1e7Pa, viscosity=1e20Pas)
+    CharDim    = SI_units(length=1m, temperature=1C, stress=(params.G)Pa, viscosity=(params.G*1.0/params.γ̇xy)Pas) 
 
     # Load digitised data from test 1 of Vermeer (1990)
     σxxi     = nondimensionalize( (σi.xx)Pa, CharDim) # Courbe A - Vermeer

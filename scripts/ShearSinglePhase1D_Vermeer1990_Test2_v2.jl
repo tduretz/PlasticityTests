@@ -41,6 +41,13 @@ function main_Yury()
     theta_R  = pi/4 + 0.5*(psi)
     theta_SB = theta_C
     Dev      = I(3)-1/3*ones(3,3)
+
+    alpha_0     = 39.999999*(π/180)
+    nstep       = 1000
+    d_gxy       = 2*0.08/nstep
+    nu          = 0.
+    Coulomb     = Vermeer2_analytics(phi,psi,nu,alpha_0,-100e3,G,nstep,d_gxy)
+
     # to Cartesian
     sigxxi   = 1/2*(sigh + sigv) +  1/2*(sigh - sigv)*cos(2*theta_SB)
     sigyyi   = 1/2*(sigh + sigv) -  1/2*(sigh - sigv)*cos(2*theta_SB)
@@ -72,6 +79,8 @@ function main_Yury()
     epsyy     =  zeros(ny+1)
     epszz     =  zeros(ny+1)
     epsxy     =  zeros(ny+1)
+    sigxx_dot =  zeros(ny+1)
+    theta     =  zeros(ny+1)
     lamrel    =  zeros(ny+1)
     epsxx_pl  =  zeros(ny+1)
     epsyy_pl  =  zeros(ny+1)
@@ -105,10 +114,10 @@ function main_Yury()
         @. tauyy0  = tauyy
         @. tauzz0  = tauzz
         @. Pt0     = Pt
+        sigv0      = sigv
         sigv_evol[it] = tauxx[end]*sin(theta_SB).^2 + tauyy[end]*cos(theta_SB).^2 - tauxy[end]*sin(2*theta_SB) - Pt[end]
         sigh_evol[it] = tauxx[end]*cos(theta_SB).^2 + tauyy[end]*sin(theta_SB).^2 + tauxy[end]*sin(2*theta_SB) - Pt[end]
         for iter=1:niter
-
             errBC       = tauxx[end]*sin(theta_SB).^2 + tauyy[end]*cos(theta_SB).^2 - tauxy[end]*sin(2*theta_SB) - Pt[end] - sigv
             sigh_it     = tauxx[end]*cos(theta_SB).^2 + tauyy[end]*sin(theta_SB).^2 + tauxy[end]*sin(2*theta_SB) - Pt[end]
             sigv        += 5e-1*(sigh - sigh_it)
@@ -116,6 +125,9 @@ function main_Yury()
             Vx[1]       = -Vx[2]      + 2*VxS
             Vx[end]     = -Vx[end-1]  + 2*VxN
             Vy[1]       = - Vy[2]     + 2*VyS
+            @. theta     = 0.5*acos((tauxx-tauyy)/2/tauxy)
+            @. sigxx_dot = 1/2*(1-cos(2*theta)) * (sigv - sigv_evol[it])/dt 
+            @. epsxx    = -(sigxx_dot) /2/G 
             @. epsxy    =  0.5*(Vx[2:end] - Vx[1:end-1])/dy
             @. epsyy    =      (Vy[2:end] - Vy[1:end-1])/dy
             @. epszz    = 1/2*(epsxx + epsyy);
@@ -137,8 +149,8 @@ function main_Yury()
                 @. epsyy_pl = lamrel.*(tauyy/2/tauii)
                 @. epszz_pl = lamrel.*(tauxx/2/tauii + tauyy/2/tauii)/2
                 @. epsxy_pl = lamrel.*(tauxy/2/tauii)
-                @. divV_pl = 3/2*sin(psi)*lamrel
-                @. Ptc      = Pt0 - 2/3*G*dt*(divV - divV_pl)
+                @. divV_pl = 2/3*sin(psi)*lamrel
+                @. Ptc      = Pt0 - 3/2*G*dt*(divV - divV_pl)
                 tau_new .= etave./etae.*[tauxx0'; tauyy0'; tauzz0'] +    2.0.*etave.*Dev*[epsxx' - epsxx_pl'; epsyy' - epsyy_pl'; epszz' - epszz_pl']
                 @. tauxx       = tau_new[1,:]
                 @. tauyy       = tau_new[2,:]
@@ -166,8 +178,8 @@ function main_Yury()
             @. Vy[2:end-1]  += deltatauV  * dVydtau[2:end-1]
             @. Pt           += deltatauPt * dPtdtau 
 
-            sigv = sigv_evol[it]
-            sigh = sigh_evol[it]
+             sigv = sigv_evol[it]
+             sigh = sigh_evol[it]
 
             if mod(iter, nout) == 0 || iter==1
                 @show maximum(abs.(RVx))
@@ -180,8 +192,8 @@ function main_Yury()
                 @printf("fPt = %2.4e\n", errPt)
                 @printf("fVx = %2.4e\n", errVx)
                 @printf("fVy = %2.4e\n", errVy)
-                σxx_trial = (tauxx[end]-Pt[end])*cos(theta_SB)^2 + (tauyy[end]-Pt[end])*sin(theta_SB)^2 + (tauxy[end])*sin(2*theta_SB)
-                @printf("σxx_trial = %2.4e\n", σxx_trial/1e3)
+                σh = (tauxx[end]-Pt[end])*cos(theta_SB)^2 + (tauyy[end]-Pt[end])*sin(theta_SB)^2 + (tauxy[end])*sin(2*theta_SB)
+                @printf("σh = %2.4e\n", σh/1e3)
                 (errVx < eps2 && errVy < eps2) && break 
                 (isnan(errPt) || isnan(errVx) || isnan(errVx)) && error("NaNs") 
             end
@@ -189,7 +201,7 @@ function main_Yury()
         @. Pt      = Ptc
         @. epsxyt += epsxy*dt
         @. epsyyt += epsyy*dt
-        gamxy[it]  = maximum(epsxyt)
+        gamxy[it]  = maximum(epsxyt*2)
 
         @show epsxyt
 
@@ -215,6 +227,7 @@ function main_Yury()
             p1 = plot(Vx, yc)
             p2 = plot(xlabel="strain", ylabel="sv/sh")
             p2 = plot!(gamxy,sigv_evol./sigh_evol)
+            p2 = plot!(Coulomb.gamma_xy, Coulomb.sigma_v/(-100e3))
             p3 = plot(xlabel="strain", ylabel="angle")
             p3 = plot!(gamxy[1:it], theta_o[1:it]*180/pi, label="out")
             p3 = plot!(gamxy[1:it], theta_i[1:it]*180/pi, label="in")
