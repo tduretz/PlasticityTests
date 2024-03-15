@@ -9,31 +9,10 @@ function main()
     σiB = (xx = -400e3, yy=-100e3, xy=0.0) # Case B
      
     # Resolution
-    Ncy     = 10
-    dt_fact = 1 
+    Ncy     = 30
+    dt_fact = 1
 
-    # 1D model
-    params = (
-        K    = Kv,
-        G    = Gv,
-        c    = 0.0,
-        ϕ    = 40/180*π,
-        ψ    = 10/180*π,
-        θt   = 25/180*π,
-        ηvp  = 0*1e7,
-        lc   = 1e2,
-        γ̇xy  = 0.00001,
-        Δt   = 20/dt_fact,
-        nt   = 400*dt_fact,
-        law  = :DruckerPrager,
-        coss = true,
-        oop  = :Vermeer1990,
-        pl   = true) # default parameter set
-    
-    # CaseA_1D  = Main_VEP_1D_vdev_coss(σiA; params, visu=false, Ncy=Ncy)
-    CaseB_1D  = Main_VEP_1D_vdev_coss(σiB; params, visu=true, Ncy=Ncy)
-
-    # # LLP solution
+    # # 1D model - Cosserat case
     # params = (
     #     K    = Kv,
     #     G    = Gv,
@@ -41,20 +20,48 @@ function main()
     #     ϕ    = 40/180*π,
     #     ψ    = 10/180*π,
     #     θt   = 25/180*π,
-    #     ηvp  = 0.,
-    #     lc   = 1e3,
+    #     ηvp  = 0*1e7,
+    #     lc   = 1e2,
     #     γ̇xy  = 0.00001,
-    #     Δt   = 2,
-    #     nt   = 4000,
+    #     Δt   = 20/dt_fact,
+    #     nt   = 400*dt_fact,
     #     law  = :DruckerPrager,
     #     coss = true,
     #     oop  = :Vermeer1990,
     #     pl   = true) # default parameter set
 
-    # Cosserat with lc   = 1e3
-    CaseB_LLP = Vermeer3_ana_llp2013(σiB, params, 10/2)
-    
-    # CaseB_LLP = Vermeer3_ana_llp2013_v2(σiB, params, 10)
+    # # Achtung: COrrect thickness for Cosserat
+    # CaseB_LLP = Vermeer3_ana_llp2013(σiB, params, 10/2)
+
+    # # CaseA_1D  = Main_VEP_1D_vdev_coss(σiA; params, visu=false, Ncy=Ncy)
+    # CaseB_1D  = Main_VEP_1D_vdev_coss(σiB; params, visu=true, Ncy=Ncy)
+
+    # 1D model - standard case
+    params = (
+        K    = Kv,
+        G    = Gv,
+        η    = 1e52,
+        c    = 0.0,
+        ϕ    = 40/180*π,
+        ψ    = 10/180*π,
+        θt   = 25/180*π,
+        ηvp  = 0e7,
+        lc   = 1e2,
+        γ̇xy  = 0.00001,
+        Δt   = 20/dt_fact,
+        nt   = 400*dt_fact,
+        law  = :DruckerPrager,
+        coss = false,
+        oop  = :Vermeer1990,
+        noisy= true,
+        pl   = true,
+        bdf  = 1) # default parameter set
+
+    # Achtung: Correct thickness for Cosserat
+    CaseB_LLP = Vermeer3_ana_llp2013(σiB, params, 30)
+
+    # CaseA_1D  = Main_VEP_1D_vdev_coss(σiA; params, visu=false, Ncy=Ncy)
+    CaseB_1D  = Main_VEP_1D_vdev_coss_BDF(σiB; params, visu=true, Ncy=Ncy)
 
     #------------------------------#
     stp = 1 # scatter step

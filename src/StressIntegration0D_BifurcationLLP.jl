@@ -45,6 +45,7 @@ function Vermeer3_ana_llp2013(σi, params, factor)
 
     lambda_dot = 0.
 
+    @info "Analytical solution on $(nstep) points"
     for i = 1:nstep-1
         M = copy(D)
 
@@ -79,7 +80,6 @@ function Vermeer3_ana_llp2013(σi, params, factor)
                 gamma_dot_xy_in *= factor
                 beenhere = 1
             end
-
             eps_dot_yy_out   = 0 # elastic deformation with constant sigma_yy and sigma_xy
             sigma_dot_xx_out = 0 # epsilon xx is 0 in 1D simple shear and sigma_dot_yy = 0 
             sigma_dot_xy_out = sigma_dot_xy_in # continuity 
@@ -100,7 +100,7 @@ function Vermeer3_ana_llp2013(σi, params, factor)
         alpha[i + 1]     = asin((sigma_out[2, i + 1] - sigma_out[1, i + 1]) / 2 / R)
         theta_out[i + 1] = 45 + alpha[i + 1] * 90 / π
     end
-    return (σ_out=sigma_out, σ_in=sigma_in, θ_out=theta_out, θ_in=theta, ε_out=epsilon_out, ε_in=epsilon_in,γ_bulk= gamma_bulk ) 
+    return (σ_out=sigma_out, σ_in=sigma_in, θ_out=theta_out, θ_in=theta, ε_out=epsilon_out, ε_in=epsilon_in, γ_bulk= gamma_bulk ) 
 end
 
 function f(sigma, phi, c)

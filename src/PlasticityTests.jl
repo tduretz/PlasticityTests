@@ -37,6 +37,9 @@ export Main_VEP_1D_vdev_GP
 include("./StressIntegration1D_VolDev_Cosserat.jl")
 export Main_VEP_1D_vdev_coss
 
+include("./StressIntegration1D_VolDev_Cosserat_BDF.jl")
+export Main_VEP_1D_vdev_coss_BDF
+
 include("./StressIntegration1D_TotalStress.jl")
 export Main_VEP_1D_tot
 
